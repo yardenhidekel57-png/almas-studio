@@ -3,190 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Alma Studio V3 - Bold & Modern</title>
+    <title>Alma Studio - Universal Sync</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; margin: 0; padding: 0; background: #000; color: white; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
         
-        html, body { 
-            height: 100%; margin: 0; padding: 0;
-            background-color: #000; color: white; 
-            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto;
-            overflow: hidden;
-        }
-
-        /* מבנה גמיש למסך */
-        .app-container {
-            display: flex; flex-direction: column;
+        .app-wrapper { 
+            display: flex; flex-direction: column; 
             height: 100vh; height: -webkit-fill-available;
             padding: 10px 15px env(safe-area-inset-bottom);
         }
 
-        /* הדר עליון יוקרתי */
-        .top-nav {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 25px; background: #111; border-radius: 20px;
+        /* הדר עליון */
+        .top-nav { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 25px; background: #111; border-radius: 20px; 
             border-bottom: 3px solid #00ffcc; margin-bottom: 15px; flex-shrink: 0;
         }
         .main-title { font-size: 3rem; color: #ffd700; font-weight: 900; line-height: 0.8; text-align: center; }
         .sub-title { font-size: 1rem; color: #00ffcc; letter-spacing: 5px; display: block; font-weight: bold; }
-        #clock { font-size: 2.2rem; font-weight: bold; color: #00ffcc; }
+        #live-clock { font-size: 2.2rem; font-weight: bold; color: #00ffcc; }
 
-        /* אזור כרטיסיות - גדולות וקריאות */
-        .workout-content {
-            flex-grow: 1; overflow-y: auto; display: grid; gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-            padding-bottom: 180px; /* רווח בשביל הטיימר הצף */
+        /* גריד מתאמנים - כרטיסיות גדולות */
+        .workout-content { 
+            flex-grow: 1; overflow-y: auto; display: grid; gap: 20px; 
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); 
+            padding-bottom: 200px; 
             align-content: start;
         }
 
-        .trainee-card {
-            background: #181818; border-radius: 30px; padding: 25px;
+        .trainee-card { 
+            background: #181818; border-radius: 30px; padding: 30px; 
             border: 2px solid #282828; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .trainee-name { 
-            font-size: 3.2rem; color: #ffd700; text-align: center; 
-            margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px; font-weight: 800;
+            font-size: 3.5rem; color: #ffd700; text-align: center; 
+            margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; font-weight: 800;
         }
-        .exercise-item { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.8rem; padding: 10px 0; border-bottom: 1px solid #222;
+        .exercise-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 2rem; padding: 12px 0; border-bottom: 1px solid #222;
         }
-        .val-weight { color: #ff9f43; font-weight: bold; }
-        .val-reps { color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; padding: 4px 15px; border-radius: 12px; }
+        .val-w { color: #ff9f43; font-weight: bold; }
+        .val-r { color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; padding: 4px 15px; border-radius: 12px; }
 
-        /* הטיימר המודרני - צף בתחתית */
-        .modern-timer-panel {
-            position: fixed; bottom: 20px; left: 15px; right: 15px;
-            background: rgba(15, 15, 15, 0.98);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 2px solid #333; border-top: 4px solid #ff9f43;
-            border-radius: 30px; padding: 20px;
-            box-shadow: 0 -15px 50px rgba(0,0,0,0.8);
-            z-index: 999;
+        /* פאנל טיימר צף ומסונכרן */
+        .sync-timer-panel { 
+            position: fixed; bottom: 20px; left: 15px; right: 15px; 
+            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px); 
+            border: 2px solid #333; border-top: 4px solid #ff9f43; 
+            border-radius: 35px; padding: 25px; 
+            box-shadow: 0 -15px 50px rgba(0,0,0,0.9); z-index: 1000;
         }
 
-        .progress-bar-bg { width: 100%; height: 10px; background: #222; border-radius: 5px; margin-bottom: 15px; overflow: hidden; }
-        .progress-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff4500); transition: width 1s linear; }
-
-        .timer-controls-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
-        .timer-clock-face { font-size: 4.5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; text-shadow: 0 0 15px rgba(255,159,67,0.3); }
+        .bar-container { width: 100%; height: 12px; background: #222; border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
+        .bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff4500); transition: width 1s linear; }
         
-        .action-buttons { display: flex; gap: 15px; }
-        .action-btn { 
-            padding: 15px 35px; border-radius: 20px; border: none; font-size: 1.4rem; font-weight: 800;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        .btn-play { background: #00ffcc; color: #000; }
-        .btn-stop { background: #222; color: #fff; border: 1px solid #444; }
+        .timer-info-row { display: flex; justify-content: space-between; align-items: center; }
+        #display-timer { font-size: 5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px rgba(255,159,67,0.3); }
+        #session-info { color: #ffd700; font-size: 1.8rem; font-weight: bold; }
 
-        #active-session-name { color: #ffd700; font-size: 1.5rem; font-weight: bold; }
-
-        /* תיקוני מובייל */
         @media (max-width: 600px) {
             .main-title { font-size: 2rem; }
-            .timer-clock-face { font-size: 3rem; }
-            .workout-content { grid-template-columns: 1fr; padding-bottom: 200px; }
-            .action-btn { padding: 10px 20px; font-size: 1.1rem; }
-            .trainee-name { font-size: 2.2rem; }
+            #display-timer { font-size: 3.5rem; }
+            .workout-content { grid-template-columns: 1fr; }
+            .trainee-name { font-size: 2.5rem; }
+            .exercise-row { font-size: 1.5rem; }
         }
     </style>
 </head>
-<body onclick="document.getElementById('finish-sound').load()">
+<body onclick="document.getElementById('beep').load()">
 
-<div class="app-container">
+<div class="app-wrapper">
     <div class="top-nav">
-        <div id="clock">00:00</div>
-        <div class="header-logo">
-            <div class="main-title">Alma's<span class="sub-title">STUDIO</span></div>
-        </div>
+        <div id="live-clock">00:00</div>
+        <div class="logo-wrap"><div class="main-title">Alma's<span class="sub-title">STUDIO</span></div></div>
         <div style="width: 80px;"></div>
     </div>
 
     <div id="main-grid" class="workout-content"></div>
 
-    <div class="modern-timer-panel">
-        <div class="progress-bar-bg"><div id="bar-fill" class="progress-bar-fill"></div></div>
-        <div class="timer-row-content">
-            <div class="timer-controls-row">
-                <div id="active-session-name">טוען נתונים...</div>
-                <div id="display-time" class="timer-clock-face">07:00</div>
-                <div class="action-buttons">
-                    <button id="p-btn" class="action-btn btn-play" onclick="toggleT(event)">הפעל</button>
-                    <button class="action-btn btn-stop" onclick="resetT(event)">איפוס</button>
-                </div>
-            </div>
+    <div class="sync-timer-panel">
+        <div class="bar-container"><div id="fill" class="bar-fill"></div></div>
+        <div class="timer-info-row">
+            <div id="session-info">ממתין...</div>
+            <div id="display-timer">07:00</div>
+            <div style="color: #444; font-size: 1rem; font-weight: bold;">LIVE SYNC</div>
         </div>
     </div>
 </div>
 
-<audio id="finish-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+<audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    const S_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
-    const MAX_T = 7 * 60;
-    let currT = MAX_T;
-    let isR = false;
-    let tInt;
+    const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+    const MAX_SECONDS = 7 * 60;
+    let lastKnownState = "";
 
-    function toggleT(e) {
-        if (e) e.stopPropagation();
-        const b = document.getElementById('p-btn');
-        if (isR) {
-            clearInterval(tInt);
-            b.innerText = "המשך";
-        } else {
-            tInt = setInterval(tick, 1000);
-            b.innerText = "עצור";
+    function updateTimerDisplay(remaining) {
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        document.getElementById('fill').style.width = (remaining / MAX_SECONDS) * 100 + "%";
+        
+        if (remaining === 0 && lastKnownState === "START") {
+            document.getElementById('beep').play();
         }
-        isR = !isR;
     }
 
-    function resetT(e) {
-        if (e) e.stopPropagation();
-        clearInterval(tInt);
-        isR = false;
-        currT = MAX_T;
-        document.getElementById('p-btn').innerText = "הפעל";
-        drawT();
+    function processSheetData(data) {
+        if (!data || !data.table) return;
+        const rows = data.table.rows;
+
+        // סנכרון לפי תאים Z1 ו-Z2 (עמודה 25)
+        const state = rows[0].c[25] ? rows[0].c[25].v.toString().toUpperCase() : "RESET";
+        const startTimeStr = rows[1].c[25] ? rows[1].c[25].v.toString() : null;
+
+        if (state === "START" && startTimeStr) {
+            const parts = startTimeStr.split(':');
+            const now = new Date();
+            const startDate = new Date();
+            startDate.setHours(parseInt(parts[0]), parseInt(parts[1]), parts[2] ? parseInt(parts[2]) : 0);
+
+            const elapsedSeconds = Math.floor((now - startDate) / 1000);
+            const remaining = Math.max(0, MAX_SECONDS - elapsedSeconds);
+            updateTimerDisplay(remaining);
+        } else {
+            updateTimerDisplay(MAX_SECONDS);
+        }
+        
+        lastKnownState = state;
+        renderWorkoutCards(rows);
     }
 
-    function tick() {
-        if (currT <= 0) {
-            document.getElementById('finish-sound').play();
-            currT = MAX_T;
-        } else { currT--; }
-        drawT();
-    }
-
-    function drawT() {
-        const m = Math.floor(currT / 60);
-        const s = currT % 60;
-        document.getElementById('display-time').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        document.getElementById('bar-fill').style.width = (currT / MAX_T) * 100 + "%";
-    }
-
-    function handleData(d) {
-        if (!d || !d.table) return;
-        const rows = d.table.rows;
+    function renderWorkoutCards(rows) {
         const grid = document.getElementById('main-grid');
         const now = new Date();
-        const cMins = now.getHours() * 60 + now.getMinutes();
-        let sessionRows = [];
-        let sTitle = "";
+        const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+        let targetRows = [];
+        let activeTitle = "";
 
         for (let i = 0; i < rows.length; i++) {
-            const first = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            if (first.includes("אימון")) {
-                const tm = first.match(/(\d{1,2}):?(\d{2})?/);
-                if (tm) {
-                    const start = parseInt(tm[1]) * 60 + (tm[2] ? parseInt(tm[2]) : 0);
-                    if (cMins >= start && cMins < (start + 60)) {
-                        sTitle = first;
+            const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+            if (firstCell.includes("אימון")) {
+                const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
+                if (timeMatch) {
+                    const h = parseInt(timeMatch[1]);
+                    const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                    const startMins = h * 60 + m;
+                    
+                    if (currentTotalMins >= startMins && currentTotalMins < (startMins + 60)) {
+                        activeTitle = firstCell;
                         let j = i + 1;
-                        while (j < rows.length) {
-                            const nxt = rows[j].c[0] ? rows[j].c[0].v.toString().trim() : "";
-                            if (nxt.includes("אימון") || nxt === "") break;
-                            sessionRows.push(rows[j]);
+                        while (j < rows.length && rows[j].c[0] && !rows[j].c[0].v.includes("אימון")) {
+                            targetRows.push(rows[j]);
                             j++;
                         }
                     }
@@ -194,36 +164,43 @@
             }
         }
 
-        if (sessionRows.length > 0) {
-            document.getElementById('active-session-name').innerText = sTitle;
-            grid.innerHTML = sessionRows.map(r => {
-                const name = r.c[0].v;
-                let exs = '';
-                for (let j = 1; j < r.c.length; j += 3) {
-                    const ex = r.c[j] ? r.c[j].v : '';
-                    const w = (r.c[j+1] && r.c[j+1].v) ? r.c[j+1].v : '';
-                    const rp = (r.c[j+2] && r.c[j+2].v) ? r.c[j+2].v : '-';
-                    if (ex && ex !== "...") exs += `<div class="exercise-item"><div>${ex} <span class="val-weight">${w}</span></div><span class="val-reps">${rp}</span></div>`;
+        if (targetRows.length > 0) {
+            document.getElementById('session-info').innerText = activeTitle;
+            grid.innerHTML = targetRows.map(row => {
+                const name = row.c[0].v;
+                let exerciseHtml = '';
+                for (let k = 1; k < row.c.length; k += 3) {
+                    const ex = row.c[k] ? row.c[k].v : '';
+                    const weight = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
+                    const reps = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
+                    if (ex && ex !== "...") {
+                        exerciseHtml += `
+                            <div class="exercise-row">
+                                <div>${ex} <span class="val-w">${weight}</span></div>
+                                <span class="val-r">${reps}</span>
+                            </div>`;
+                    }
                 }
-                return `<div class="trainee-card"><div class="trainee-name">${name}</div>${exs}</div>`;
+                return `<div class="trainee-card"><div class="trainee-name">${name}</div>${exerciseHtml}</div>`;
             }).join('');
         } else {
-            document.getElementById('active-session-name').innerText = "אין אימון פעיל";
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#333;font-size:3rem;">READY TO START</div>';
+            document.getElementById('session-info').innerText = "אין אימון פעיל";
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#222;font-size:4rem;font-weight:900;">ALMA STUDIO</div>';
         }
     }
 
-    function refresh() {
-        const s = document.createElement('script');
-        s.src = `https://docs.google.com/spreadsheets/d/${S_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
-        document.body.appendChild(s);
+    function fetchData() {
+        const script = document.createElement('script');
+        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:processSheetData&gid=0&tcb=${Date.now()}`;
+        document.body.appendChild(script);
     }
 
-    setInterval(refresh, 5000);
+    setInterval(fetchData, 3000);
     setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
-    refresh();
+    
+    fetchData();
 </script>
 </body>
 </html>
