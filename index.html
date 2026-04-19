@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alma's Studio - Control Bottom</title>
+    <title>Alma's Studio - Bottom Timer Fixed</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; background-color: #050505; color: white; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
@@ -21,9 +21,9 @@
         .logo-main { font-size: 3rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; line-height: 0.8; }
         .logo-sub { font-size: 1rem; color: #00ffcc; letter-spacing: 6px; text-transform: uppercase; display: block; margin-top: 5px; font-weight: bold; }
         
-        #time { font-size: 2rem; color: #00ffcc; font-weight: bold; }
+        #time { font-size: 2.2rem; color: #00ffcc; font-weight: bold; }
 
-        /* גריד מרכזי */
+        /* גריד מרכזי - בדיוק כמו שאהבת */
         #main-grid { 
             display: grid; gap: 20px; width: 100%; flex-grow: 1;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -32,56 +32,59 @@
 
         .card { 
             background: #161616; border: 3px solid #333; border-radius: 25px; 
-            padding: 20px; display: flex; flex-direction: column; 
+            padding: 25px; display: flex; flex-direction: column; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.9);
         }
 
         .name { 
-            font-size: 2.8rem; color: #ffd700; text-align: center; 
-            border-bottom: 3px solid #444; margin-bottom: 10px; 
-            padding-bottom: 8px; font-weight: 900;
+            font-size: 3rem; color: #ffd700; text-align: center; 
+            border-bottom: 3px solid #444; margin-bottom: 15px; 
+            padding-bottom: 10px; font-weight: 900;
         }
         
-        .ex-list { display: flex; flex-direction: column; gap: 10px; }
+        .ex-list { display: flex; flex-direction: column; gap: 12px; }
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            font-size: 1.6rem; padding: 6px 0; border-bottom: 1px solid #222;
+            font-size: 1.8rem; padding: 8px 0; border-bottom: 1px solid #222;
         }
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 8px; background: rgba(255,159,67,0.1); padding: 0 8px; border-radius: 6px; }
-        .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 4px 15px; border-radius: 10px; }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 10px; background: rgba(255,159,67,0.1); padding: 2px 10px; border-radius: 6px; }
+        .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 5px 20px; border-radius: 12px; }
 
-        /* פאנל תחתון - טיימר וכפתורים */
+        /* פאנל תחתון - הטיימר כאן! */
         .footer-controls {
-            background: #111; padding: 15px 30px; border-radius: 20px; 
-            border-top: 4px solid #ff9f43; margin-top: 15px;
+            background: #111; padding: 15px 30px; border-radius: 25px; 
+            border-top: 5px solid #ff9f43; margin-top: 15px;
             display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
         }
 
-        #timer-bar-container { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
+        #timer-bar-container { width: 100%; height: 14px; background: #222; border-radius: 7px; overflow: hidden; }
         #timer-bar-fill { width: 100%; height: 100%; background: #ff9f43; transition: width 1s linear; }
 
         .timer-row { display: flex; justify-content: space-between; align-items: center; }
-        #timer-display { font-size: 3.5rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; }
+        #timer-display { font-size: 4rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; }
         
-        .btn-group { display: flex; gap: 15px; }
-        .btn { background: #333; color: white; border: 2px solid #555; padding: 10px 25px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; font-weight: bold; }
+        .btn-group { display: flex; gap: 20px; }
+        .btn { background: #333; color: white; border: 2px solid #555; padding: 12px 30px; border-radius: 15px; cursor: pointer; font-size: 1.3rem; font-weight: bold; }
         .btn-start { background: #00816a; border-color: #00ffcc; }
 
-        #session-label { color: #ffd700; font-weight: bold; font-size: 1.5rem; }
+        #session-label { color: #ffd700; font-weight: bold; font-size: 2rem; }
 
         @media (max-width: 800px) {
-            .header { min-height: unset; padding: 10px; }
-            .logo-main { font-size: 2rem; }
+            .header { padding: 10px; min-height: 80px; }
+            .logo-main { font-size: 2.2rem; }
             .footer-controls { padding: 10px; }
-            #timer-display { font-size: 2.5rem; }
+            #timer-display { font-size: 2.8rem; }
             #main-grid { grid-template-columns: 1fr; }
+            .name { font-size: 2.2rem; }
+            .ex-row { font-size: 1.4rem; }
         }
     </style>
 </head>
 <body onclick="document.getElementById('finish-sound').load()">
 
     <div class="header">
-        <div style="width: 100px;"></div> <div class="studio-logo">
+        <div style="width: 120px;"></div> <div class="studio-logo">
             <span class="logo-main">Alma's</span>
             <span class="logo-sub">STUDIO</span>
         </div>
@@ -113,12 +116,15 @@
 
         function toggleTimer(event) {
             if (event) event.stopPropagation();
+            const btn = document.getElementById('start-btn');
             if (timerRunning) {
                 clearInterval(timerInterval);
-                document.getElementById('start-btn').innerText = "המשך";
+                btn.innerText = "המשך";
+                btn.style.backgroundColor = "#333";
             } else {
                 timerInterval = setInterval(updateTimer, 1000);
-                document.getElementById('start-btn').innerText = "עצור";
+                btn.innerText = "עצור";
+                btn.style.backgroundColor = "#00816a";
             }
             timerRunning = !timerRunning;
         }
@@ -129,6 +135,7 @@
             timerRunning = false;
             timeLeft = TOTAL_TIME;
             document.getElementById('start-btn').innerText = "הפעל";
+            document.getElementById('start-btn').style.backgroundColor = "#00816a";
             updateTimerDisplay();
         }
 
@@ -195,7 +202,7 @@
                 grid.innerHTML = html;
             } else {
                 document.getElementById('session-label').innerText = "ממתין לאימון...";
-                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:60px;color:#444;font-size:2rem;">אין אימון פעיל בשעה זו</div>';
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#444;font-size:3rem;">אין אימון פעיל כרגע</div>';
             }
         }
 
