@@ -3,32 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alma's Studio - Precise Timing</title>
+    <title>Alma's Studio - Official Board</title>
     <style>
+        /* עיצוב כללי */
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; background-color: #050505; color: white; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
         body { display: flex; flex-direction: column; padding: 10px; }
-        #timer-bar-container { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+
+        /* פס התקדמות עליון */
+        #timer-bar-container { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 8px; overflow: hidden; flex-shrink: 0; }
         #timer-bar-fill { width: 100%; height: 100%; background: #00ffcc; transition: width 1s linear; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0 20px; border-radius: 15px; border-bottom: 4px solid #00ffcc; min-height: 70px; margin-bottom: 10px; flex-shrink: 0; position: relative; }
+
+        /* כותרת */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #111; padding: 0 20px; border-radius: 15px; 
+            border-bottom: 4px solid #00ffcc; min-height: 70px; margin-bottom: 10px;
+            flex-shrink: 0; position: relative;
+        }
+
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
         .logo-main { font-size: clamp(1.5rem, 4vw, 2.8rem); color: #ffd700; font-weight: 900; letter-spacing: 2px; }
+        
         .timer-controls { display: flex; align-items: center; gap: 15px; }
-        #timer-display { font-size: 2.2rem; color: #ff9f43; font-weight: bold; }
+        #timer-display { font-size: 2.2rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; }
+        
         .btn { background: #333; color: white; border: 1px solid #555; padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
         .btn-start { background: #00816a; border-color: #00ffcc; font-weight: bold; }
-        #main-grid { display: grid; gap: 15px; width: 100%; flex-grow: 1; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); grid-auto-rows: 1fr; }
-        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; }
-        .name { font-size: clamp(1.4rem, 4vh, 2.5rem); color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 10px; padding-bottom: 5px; font-weight: 900; }
-        .ex-list { display: flex; flex-direction: column; justify-content: space-evenly; flex-grow: 1; }
-        .ex-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(1rem, 2.2vh, 1.6rem); padding: 5px 0; border-bottom: 1px solid #222; }
-        .weight { color: #ff9f43; font-weight: bold; background: rgba(255, 159, 67, 0.1); padding: 2px 8px; border-radius: 6px; }
-        .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 2px 15px; border-radius: 10px; }
-        #session-label { text-align: center; color: #ffd700; font-weight: bold; padding: 5px; font-size: 1.2rem; }
+
+        /* גריד של המתאמנות */
+        #main-grid { 
+            display: grid; gap: 15px; width: 100%; flex-grow: 1;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            overflow-y: auto; align-content: start;
+        }
+
+        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.8); }
+        .name { font-size: clamp(1.4rem, 3vh, 2.2rem); color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 10px; padding-bottom: 5px; font-weight: 900; }
+        
+        .ex-list { display: flex; flex-direction: column; gap: 8px; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.9rem, 1.8vh, 1.4rem); padding: 4px 0; border-bottom: 1px solid #222; }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 5px; }
+        .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 2px 10px; border-radius: 8px; }
+
+        #session-label { text-align: center; color: #ffd700; font-weight: bold; padding: 10px; font-size: 1.2rem; flex-shrink: 0; }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; height: auto; padding: 15px; gap: 15px; }
+            .studio-logo { position: static; transform: none; order: -1; }
+            #main-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body onclick="document.getElementById('finish-sound').load()">
+
     <div id="timer-bar-container"><div id="timer-bar-fill"></div></div>
+    
     <div class="header">
         <div class="timer-controls">
             <div id="timer-display">07:00</div>
@@ -38,8 +68,10 @@
         <div class="studio-logo"><span class="logo-main">Alma's</span></div>
         <div id="time" style="font-size: 1.5rem; color: #00ffcc;">00:00</div>
     </div>
+
     <div id="main-grid"></div>
-    <div id="session-label">מחפש אימון...</div>
+    <div id="session-label">טוען נתונים...</div>
+
     <audio id="finish-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
@@ -97,17 +129,13 @@
 
             for (let i = 0; i < rows.length; i++) {
                 const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-                
                 if (firstCell.includes("אימון")) {
-                    // חילוץ שעה ודקה בפורמט HH:MM או רק HH
                     const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
                     if (timeMatch) {
                         const h = parseInt(timeMatch[1]);
                         const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-                        const sessionStartMinutes = h * 60 + m;
-                        const sessionEndMinutes = sessionStartMinutes + 60;
-
-                        if (currentTotalMinutes >= sessionStartMinutes && currentTotalMinutes < sessionEndMinutes) {
+                        const start = h * 60 + m;
+                        if (currentTotalMinutes >= start && currentTotalMinutes < (start + 60)) {
                             activeSessionTitle = firstCell;
                             let j = i + 1;
                             while (j < rows.length) {
@@ -129,18 +157,16 @@
                     html += `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
                     for (let j = 1; j < row.c.length; j += 3) {
                         const ex = row.c[j] ? row.c[j].v : '';
-                        const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
-                        const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
-                        if (ex && ex !== "" && ex !== "...") {
-                            html += `<div class="ex-row"><div><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
-                        }
+                        const w = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
+                        const r = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
+                        if (ex && ex !== "...") html += `<div class="ex-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
                     }
                     html += `</div></div>`;
                 });
                 grid.innerHTML = html;
             } else {
-                document.getElementById('session-label').innerText = "ממתין לאימון הבא...";
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding-top: 50px; font-size: 1.5rem; color: #444;">אין אימון פעיל בשעה זו</div>';
+                document.getElementById('session-label').innerText = "ממתין לאימון...";
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:40px;color:#444;">אין אימון פעיל כרגע</div>';
             }
         }
 
