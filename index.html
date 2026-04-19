@@ -3,115 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Alma's Studio - Bold & Fixed</title>
+    <title>Alma's Studio - Modern Edition</title>
     <style>
+        :root {
+            --neon-green: #00ffcc;
+            --neon-orange: #ff9f43;
+            --dark-bg: #050505;
+            --card-bg: #121212;
+        }
+
         * { box-sizing: border-box; }
         
         html, body { 
-            height: 100vh; 
-            margin: 0; 
-            background-color: #050505; 
-            color: white; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            height: 100vh; margin: 0; background-color: var(--dark-bg); 
+            color: white; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            overflow: hidden; display: flex; flex-direction: column;
         }
 
-        body { 
-            padding: 10px;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        body { padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px; }
 
         /* הדר עליון */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
-            background: #111; padding: 10px 30px; border-radius: 20px; 
-            border-bottom: 5px solid #00ffcc; min-height: 90px;
+            background: rgba(20, 20, 20, 0.95); padding: 15px 30px; border-radius: 20px; 
+            border-bottom: 3px solid var(--neon-green); min-height: 90px;
             flex-shrink: 0; position: relative; margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(0, 255, 204, 0.1);
         }
 
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 3rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; line-height: 0.8; }
-        .logo-sub { font-size: 1rem; color: #00ffcc; letter-spacing: 6px; text-transform: uppercase; display: block; margin-top: 5px; font-weight: bold; }
-        #time { font-size: 2.2rem; color: #00ffcc; font-weight: bold; }
+        .logo-main { font-size: 3.2rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+        .logo-sub { font-size: 1.1rem; color: var(--neon-green); letter-spacing: 8px; text-transform: uppercase; display: block; font-weight: bold; }
+        #time { font-size: 2.2rem; color: var(--neon-green); font-weight: bold; font-variant-numeric: tabular-nums; }
 
-        /* גריד מרכזי - החזרנו את הגודל המקורי! */
+        /* גריד מרכזי - כרטיסיות גדולות */
         #main-grid { 
-            display: grid; gap: 20px; width: 100%; 
+            display: grid; gap: 25px; width: 100%; 
             flex-grow: 1;
-            /* כאן הגדרנו שהכרטיסייה לא תרד מתחת ל-400 פיקסל */
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             overflow-y: auto; 
             align-content: start;
-            padding-bottom: 20px;
+            padding: 10px 5px 30px 5px;
         }
 
         .card { 
-            background: #161616; border: 3px solid #333; border-radius: 25px; 
-            padding: 25px; display: flex; flex-direction: column; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-            min-height: 350px; /* מבטיח שהכרטיסייה לא תתכווץ בגובה */
+            background: var(--card-bg); border: 2px solid #222; border-radius: 30px; 
+            padding: 30px; display: flex; flex-direction: column; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            transition: transform 0.3s ease;
         }
 
         .name { 
-            font-size: 3rem; color: #ffd700; text-align: center; 
-            border-bottom: 3px solid #444; margin-bottom: 15px; 
+            font-size: 3.5rem; color: #ffd700; text-align: center; 
+            border-bottom: 2px solid #333; margin-bottom: 20px; 
             padding-bottom: 10px; font-weight: 900;
         }
         
-        .ex-list { display: flex; flex-direction: column; gap: 12px; flex-grow: 1; justify-content: center; }
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            font-size: 1.8rem; padding: 8px 0; border-bottom: 1px solid #222;
+            font-size: 2rem; padding: 12px 0; border-bottom: 1px solid #1a1a1a;
         }
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 10px; background: rgba(255,159,67,0.1); padding: 2px 10px; border-radius: 6px; }
-        .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 5px 20px; border-radius: 12px; }
+        .weight { color: var(--neon-orange); font-weight: bold; background: rgba(255,159,67,0.1); padding: 2px 12px; border-radius: 8px; }
+        .reps { color: var(--neon-green); font-weight: bold; border: 2px solid var(--neon-green); padding: 5px 20px; border-radius: 15px; }
 
-        /* פאנל תחתון - יציב וברור */
+        /* פאנל טיימר מודרני */
         .footer-controls {
-            background: #111; padding: 15px 30px; border-radius: 25px; 
-            border-top: 5px solid #ff9f43;
-            display: flex; flex-direction: column; gap: 10px; 
+            background: #0f0f0f; 
+            padding: 20px 40px; 
+            border-radius: 35px 35px 0 0; 
+            border-top: 4px solid var(--neon-orange);
+            display: flex; flex-direction: column; gap: 15px; 
             flex-shrink: 0;
-            margin-top: 10px;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 -15px 40px rgba(0,0,0,0.9);
+            margin: 0 -15px; /* נמתח מקצה לקצה */
         }
 
-        #timer-bar-container { width: 100%; height: 14px; background: #222; border-radius: 7px; overflow: hidden; }
-        #timer-bar-fill { width: 100%; height: 100%; background: #ff9f43; transition: width 1s linear; }
+        #timer-bar-container { width: 100%; height: 12px; background: #222; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 5px #000; }
+        #timer-bar-fill { 
+            width: 100%; height: 100%; 
+            background: linear-gradient(90deg, #ff6b6b, var(--neon-orange)); 
+            box-shadow: 0 0 15px var(--neon-orange);
+            transition: width 1s linear; 
+        }
 
         .timer-row { display: flex; justify-content: space-between; align-items: center; }
-        #timer-display { font-size: 3.5rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; }
         
-        .btn-group { display: flex; gap: 20px; }
-        .btn { background: #333; color: white; border: 2px solid #555; padding: 12px 30px; border-radius: 15px; cursor: pointer; font-size: 1.3rem; font-weight: bold; }
-        .btn-start { background: #00816a; border-color: #00ffcc; }
+        #timer-display { 
+            font-size: 5rem; color: var(--neon-orange); font-weight: 900; 
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(255, 159, 67, 0.4);
+        }
+        
+        .btn-group { display: flex; gap: 15px; }
+        .btn { 
+            border: none; color: white; padding: 15px 35px; border-radius: 20px; 
+            cursor: pointer; font-size: 1.4rem; font-weight: 800; 
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+        .btn-start { 
+            background: linear-gradient(135deg, #00816a, #00ffcc); 
+            color: #050505;
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3);
+        }
+        .btn-reset { background: #222; border: 1px solid #444; }
+        .btn:active { transform: scale(0.95); }
 
-        #session-label { color: #ffd700; font-weight: bold; font-size: 1.8rem; }
+        #session-label { color: #888; font-weight: bold; font-size: 1.5rem; letter-spacing: 1px; }
 
-        /* התאמה לאייפון - מקטין רק כשממש חייב */
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
             #main-grid { grid-template-columns: 1fr; }
-            .card { min-height: unset; padding: 15px; }
-            .name { font-size: 2.2rem; }
-            .ex-row { font-size: 1.4rem; }
-            .header { min-height: 80px; padding: 10px; }
             .logo-main { font-size: 2.2rem; }
-            #timer-display { font-size: 2.5rem; }
-            .btn { padding: 8px 15px; font-size: 1rem; }
+            #timer-display { font-size: 3.5rem; }
+            .footer-controls { padding: 15px 20px; }
+            .name { font-size: 2.5rem; }
         }
     </style>
 </head>
 <body onclick="document.getElementById('finish-sound').load()">
 
     <div class="header">
-        <div style="width: 100px;"></div>
+        <div id="time">00:00</div>
         <div class="studio-logo">
             <span class="logo-main">Alma's</span>
             <span class="logo-sub">STUDIO</span>
         </div>
-        <div id="time">00:00</div>
+        <div style="width: 100px;"></div>
     </div>
 
     <div id="main-grid"></div>
@@ -119,11 +136,11 @@
     <div class="footer-controls">
         <div id="timer-bar-container"><div id="timer-bar-fill"></div></div>
         <div class="timer-row">
-            <div id="session-label">טוען...</div>
+            <div id="session-label">WAITING...</div>
             <div id="timer-display">07:00</div>
             <div class="btn-group">
                 <button id="start-btn" class="btn btn-start" onclick="toggleTimer(event)">הפעל</button>
-                <button class="btn" onclick="resetTimer(event)">איפוס</button>
+                <button class="btn btn-reset" onclick="resetTimer(event)">איפוס</button>
             </div>
         </div>
     </div>
@@ -143,9 +160,11 @@
             if (timerRunning) {
                 clearInterval(timerInterval);
                 btn.innerText = "המשך";
+                btn.style.filter = "grayscale(0.5)";
             } else {
                 timerInterval = setInterval(updateTimer, 1000);
                 btn.innerText = "עצור";
+                btn.style.filter = "none";
             }
             timerRunning = !timerRunning;
         }
@@ -156,6 +175,7 @@
             timerRunning = false;
             timeLeft = TOTAL_TIME;
             document.getElementById('start-btn').innerText = "הפעל";
+            document.getElementById('start-btn').style.filter = "none";
             updateTimerDisplay();
         }
 
@@ -206,7 +226,7 @@
             }
 
             if (targetSessionRows.length > 0) {
-                document.getElementById('session-label').innerText = activeSessionTitle;
+                document.getElementById('session-label').innerText = activeSessionTitle.toUpperCase();
                 let html = '';
                 targetSessionRows.forEach(row => {
                     const name = row.c[0].v;
@@ -221,8 +241,8 @@
                 });
                 grid.innerHTML = html;
             } else {
-                document.getElementById('session-label').innerText = "ממתין...";
-                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:60px;color:#444;font-size:2rem;">אין אימון פעיל</div>';
+                document.getElementById('session-label').innerText = "NO ACTIVE SESSION";
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#333;font-size:3rem;font-weight:900;">OFF-TIME</div>';
             }
         }
 
