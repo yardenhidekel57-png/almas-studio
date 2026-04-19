@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Alma Studio - Universal Sync</title>
+    <title>Alma Studio - Synchronized Pro</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; margin: 0; padding: 0; background: #000; color: white; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
@@ -27,48 +27,48 @@
         /* גריד מתאמנים - כרטיסיות גדולות */
         .workout-content { 
             flex-grow: 1; overflow-y: auto; display: grid; gap: 20px; 
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); 
-            padding-bottom: 200px; 
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            padding-bottom: 220px; 
             align-content: start;
         }
 
         .trainee-card { 
-            background: #181818; border-radius: 30px; padding: 30px; 
+            background: #181818; border-radius: 35px; padding: 35px; 
             border: 2px solid #282828; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .trainee-name { 
-            font-size: 3.5rem; color: #ffd700; text-align: center; 
+            font-size: 3.8rem; color: #ffd700; text-align: center; 
             margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; font-weight: 800;
         }
         .exercise-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            font-size: 2rem; padding: 12px 0; border-bottom: 1px solid #222;
+            font-size: 2.2rem; padding: 15px 0; border-bottom: 1px solid #222;
         }
         .val-w { color: #ff9f43; font-weight: bold; }
-        .val-r { color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; padding: 4px 15px; border-radius: 12px; }
+        .val-r { color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; padding: 5px 20px; border-radius: 15px; }
 
         /* פאנל טיימר צף ומסונכרן */
         .sync-timer-panel { 
             position: fixed; bottom: 20px; left: 15px; right: 15px; 
-            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px); 
-            border: 2px solid #333; border-top: 4px solid #ff9f43; 
-            border-radius: 35px; padding: 25px; 
-            box-shadow: 0 -15px 50px rgba(0,0,0,0.9); z-index: 1000;
+            background: rgba(15, 15, 15, 0.98); backdrop-filter: blur(15px); 
+            border: 2px solid #333; border-top: 5px solid #ff9f43; 
+            border-radius: 40px; padding: 25px; 
+            box-shadow: 0 -15px 60px rgba(0,0,0,0.9); z-index: 1000;
         }
 
-        .bar-container { width: 100%; height: 12px; background: #222; border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
+        .bar-container { width: 100%; height: 14px; background: #222; border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
         .bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff4500); transition: width 1s linear; }
         
         .timer-info-row { display: flex; justify-content: space-between; align-items: center; }
-        #display-timer { font-size: 5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px rgba(255,159,67,0.3); }
+        #display-timer { font-size: 5.5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px rgba(255,159,67,0.3); }
         #session-info { color: #ffd700; font-size: 1.8rem; font-weight: bold; }
 
         @media (max-width: 600px) {
             .main-title { font-size: 2rem; }
-            #display-timer { font-size: 3.5rem; }
-            .workout-content { grid-template-columns: 1fr; }
-            .trainee-name { font-size: 2.5rem; }
-            .exercise-row { font-size: 1.5rem; }
+            #display-timer { font-size: 3.8rem; }
+            .workout-content { grid-template-columns: 1fr; minmax(300px, 1fr); }
+            .trainee-name { font-size: 2.8rem; }
+            .exercise-row { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -86,9 +86,9 @@
     <div class="sync-timer-panel">
         <div class="bar-container"><div id="fill" class="bar-fill"></div></div>
         <div class="timer-info-row">
-            <div id="session-info">ממתין...</div>
+            <div id="session-info">מעדכן נתונים...</div>
             <div id="display-timer">07:00</div>
-            <div style="color: #444; font-size: 1rem; font-weight: bold;">LIVE SYNC</div>
+            <div style="color: #444; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px;">SYNC ON</div>
         </div>
     </div>
 </div>
@@ -123,6 +123,7 @@
             const parts = startTimeStr.split(':');
             const now = new Date();
             const startDate = new Date();
+            // הגדרת שעת ההתחלה מהגיליון
             startDate.setHours(parseInt(parts[0]), parseInt(parts[1]), parts[2] ? parseInt(parts[2]) : 0);
 
             const elapsedSeconds = Math.floor((now - startDate) / 1000);
@@ -184,8 +185,8 @@
                 return `<div class="trainee-card"><div class="trainee-name">${name}</div>${exerciseHtml}</div>`;
             }).join('');
         } else {
-            document.getElementById('session-info').innerText = "אין אימון פעיל";
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#222;font-size:4rem;font-weight:900;">ALMA STUDIO</div>';
+            document.getElementById('session-info').innerText = "מוכן לאימון";
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#222;font-size:4.5rem;font-weight:900;">ALMA STUDIO</div>';
         }
     }
 
@@ -195,7 +196,9 @@
         document.body.appendChild(script);
     }
 
+    // בדיקת נתונים כל 3 שניות
     setInterval(fetchData, 3000);
+    // עדכון השעון העליון
     setInterval(() => {
         document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
