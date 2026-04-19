@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alma's Studio - Training Timer</title>
+    <title>Alma's Studio - Control Timer</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; background-color: #050505; color: white; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
         body { display: flex; flex-direction: column; padding: 10px; }
 
-        /* פס התקדמות לטיימר */
-        #timer-bar-container {
-            width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 8px; overflow: hidden;
-        }
-        #timer-bar-fill {
-            width: 100%; height: 100%; background: #00ffcc; transition: width 1s linear;
-        }
+        #timer-bar-container { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+        #timer-bar-fill { width: 100%; height: 100%; background: #00ffcc; transition: width 1s linear; }
 
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
@@ -27,8 +22,16 @@
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
         .logo-main { font-size: clamp(1.5rem, 4vw, 2.8rem); color: #ffd700; font-weight: 900; letter-spacing: 2px; }
         
-        /* תצוגת הטיימר בתוך ההדר */
-        #timer-display { font-size: 2rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; }
+        /* עיצוב הטיימר והכפתורים */
+        .timer-controls { display: flex; align-items: center; gap: 15px; }
+        #timer-display { font-size: 2.2rem; color: #ff9f43; font-weight: bold; font-variant-numeric: tabular-nums; cursor: pointer; }
+        
+        .btn {
+            background: #333; color: white; border: 1px solid #555; padding: 5px 12px; 
+            border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+        }
+        .btn:hover { background: #444; border-color: #00ffcc; }
+        .btn-start { background: #00816a; border-color: #00ffcc; font-weight: bold; }
 
         #main-grid { 
             display: grid; gap: 15px; width: 100%; flex-grow: 1;
@@ -36,24 +39,10 @@
             grid-auto-rows: 1fr;
         }
 
-        .card { 
-            background: #161616; border: 2px solid #333; border-radius: 20px; 
-            padding: 15px; display: flex; flex-direction: column;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
-        }
-
-        .name { 
-            font-size: clamp(1.4rem, 4vh, 2.5rem); color: #ffd700; 
-            text-align: center; border-bottom: 2px solid #444; 
-            margin-bottom: 10px; padding-bottom: 5px; font-weight: 900;
-        }
-
+        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.8); }
+        .name { font-size: clamp(1.4rem, 4vh, 2.5rem); color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 10px; padding-bottom: 5px; font-weight: 900; }
         .ex-list { display: flex; flex-direction: column; justify-content: space-evenly; flex-grow: 1; }
-        .ex-row { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: clamp(1rem, 2.2vh, 1.6rem); padding: 5px 0; border-bottom: 1px solid #222;
-        }
-
+        .ex-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(1rem, 2.2vh, 1.6rem); padding: 5px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; background: rgba(255, 159, 67, 0.1); padding: 2px 8px; border-radius: 6px; }
         .reps { color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 2px 15px; border-radius: 10px; }
 
@@ -61,16 +50,20 @@
 
         @media (max-width: 600px) {
             #main-grid { grid-template-columns: 1fr; overflow-y: auto; }
-            .header { height: auto; flex-direction: column; padding: 10px; }
-            .studio-logo { position: static; transform: none; }
+            .header { height: auto; flex-direction: column; padding: 15px; gap: 15px; }
+            .studio-logo { position: static; transform: none; order: -1; }
         }
     </style>
 </head>
-<body>
+<body onclick="startOnFirstClick()">
     <div id="timer-bar-container"><div id="timer-bar-fill"></div></div>
     
     <div class="header">
-        <div id="timer-display">07:00</div>
+        <div class="timer-controls">
+            <div id="timer-display">07:00</div>
+            <button id="start-btn" class="btn btn-start" onclick="toggleTimer(event)">הפעל</button>
+            <button class="btn" onclick="resetTimer(event)">איפוס</button>
+        </div>
         <div class="studio-logo">
             <span class="logo-main">Alma's</span>
         </div>
@@ -80,35 +73,68 @@
     <div id="main-grid"></div>
     <div id="session-label">טוען...</div>
 
-    <audio id="finish-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+    <audio id="finish-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
-        let timeLeft = 7 * 60; // 7 דקות בשניות
+        const TOTAL_TIME = 7 * 60;
+        let timeLeft = TOTAL_TIME;
+        let timerRunning = false;
+        let timerInterval;
+
+        function startOnFirstClick() {
+            // מאפשר סאונד בדפדפן בלחיצה ראשונה על המסך
+            document.getElementById('finish-sound').load();
+        }
+
+        function toggleTimer(event) {
+            if (event) event.stopPropagation();
+            if (timerRunning) {
+                clearInterval(timerInterval);
+                document.getElementById('start-btn').innerText = "המשך";
+                document.getElementById('start-btn').classList.remove('btn-start');
+            } else {
+                timerInterval = setInterval(updateTimer, 1000);
+                document.getElementById('start-btn').innerText = "עצור";
+                document.getElementById('start-btn').classList.add('btn-start');
+            }
+            timerRunning = !timerRunning;
+        }
+
+        function resetTimer(event) {
+            if (event) event.stopPropagation();
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timeLeft = TOTAL_TIME;
+            document.getElementById('start-btn').innerText = "הפעל";
+            document.getElementById('start-btn').classList.add('btn-start');
+            updateTimerDisplay();
+        }
 
         function updateTimer() {
+            if (timeLeft <= 0) {
+                document.getElementById('finish-sound').play();
+                timeLeft = TOTAL_TIME;
+            } else {
+                timeLeft--;
+            }
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             document.getElementById('timer-display').innerText = 
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            // עדכון הפס הירוק
-            const percent = (timeLeft / (7 * 60)) * 100;
+            const percent = (timeLeft / TOTAL_TIME) * 100;
             document.getElementById('timer-bar-fill').style.width = percent + "%";
-
-            if (timeLeft <= 0) {
-                document.getElementById('finish-sound').play();
-                timeLeft = 7 * 60; // איפוס ל-7 דקות
-            } else {
-                timeLeft--;
-            }
         }
 
         function googleDocCallback(data) {
             if (!data || !data.table) return;
             const rows = data.table.rows;
             const grid = document.getElementById('main-grid');
-            grid.innerHTML = '';
+            let contentHtml = '';
             const now = new Date();
             const currentTimeValue = now.getHours() * 100 + now.getMinutes();
             let targetSessionRows = [];
@@ -131,18 +157,18 @@
             document.getElementById('session-label').innerText = currentScanningSession || "אין אימון פעיל";
             targetSessionRows.forEach(row => {
                 const name = row.c[0].v;
-                let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
+                contentHtml += `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
                 for (let j = 1; j < row.c.length; j += 3) {
                     const ex = row.c[j] ? row.c[j].v : '';
                     const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
                     const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
                     if (ex && ex !== "" && ex !== "...") {
-                        html += `<div class="ex-row"><div><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
+                        contentHtml += `<div class="ex-row"><div><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
                     }
                 }
-                html += `</div></div>`;
-                grid.innerHTML += html;
+                contentHtml += `</div></div>`;
             });
+            grid.innerHTML = contentHtml;
         }
 
         function refresh() {
@@ -157,7 +183,6 @@
 
         setInterval(refresh, 5000);
         setInterval(clock, 1000);
-        setInterval(updateTimer, 1000);
         refresh(); clock();
     </script>
 </body>
