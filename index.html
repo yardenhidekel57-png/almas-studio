@@ -3,32 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Live View</title>
+    <title>Alma Studio - Full Screen View</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
         
+        /* כותרת עליונה */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 20px; background-color: #111; border-radius: 15px;
+            padding: 1vh 2vw; background-color: #111; border-radius: 15px;
             border-bottom: 3px solid #00ffcc; margin: 10px; flex-shrink: 0;
+            height: 8vh;
         }
-        .studio-name { font-size: 1.8rem; color: #ffd700; font-weight: 900; }
-        #live-clock { font-size: 1.5rem; color: #00ffcc; font-weight: bold; }
+        .studio-name { font-size: 3.5vh; color: #ffd700; font-weight: 900; }
+        #live-clock { font-size: 3vh; color: #00ffcc; font-weight: bold; }
 
+        /* גריד הכרטיסיות - מותאם למסכים גדולים */
         .cards-grid { 
-            display: grid; gap: 15px; padding: 10px;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            overflow-y: auto; height: calc(100vh - 100px); align-content: start;
+            display: grid; 
+            gap: 20px; 
+            padding: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+            overflow-y: auto; 
+            height: 88vh; 
+            align-content: start;
         }
 
-        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; margin-bottom: 5px; }
-        .trainee-name { font-size: 2.2rem; color: #ffd700; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 8px; font-weight: 900; }
-        .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222; }
-        .weight { color: #ff9f43; font-weight: bold; }
-        .reps { color: #00ffcc; font-weight: bold; border: 1px solid #00ffcc; padding: 2px 8px; border-radius: 8px; }
+        /* עיצוב כרטיסייה מוגדל */
+        .card { 
+            background-color: #161616; 
+            border-radius: 25px; 
+            padding: 2.5vh; 
+            border: 3px solid #282828; 
+            display: flex; 
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-        /* הסתרת סקולבר לעיצוב נקי */
+        .trainee-name { 
+            font-size: 4vh; 
+            color: #ffd700; 
+            text-align: center; 
+            margin-bottom: 1.5vh; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 1vh; 
+            font-weight: 900; 
+        }
+
+        .exercise-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 2.8vh; 
+            padding: 1.2vh 0; 
+            border-bottom: 1px solid #222; 
+        }
+
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 10px; }
+        .reps { 
+            color: #00ffcc; 
+            font-weight: bold; 
+            border: 2px solid #00ffcc; 
+            padding: 4px 15px; 
+            border-radius: 12px; 
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* התאמה מיוחדת למסכים קטנים (אייפון) */
+        @media (max-width: 768px) {
+            .cards-grid { grid-template-columns: 1fr; }
+            .trainee-name { font-size: 3vh; }
+            .exercise-row { font-size: 2.2vh; }
+        }
+
         .cards-grid::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -51,7 +99,6 @@
         const now = new Date();
         const nowMins = now.getHours() * 60 + now.getMinutes();
 
-        // זיהוי האימון הפעיל לפי השעה בגיליון
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
@@ -72,7 +119,6 @@
                 if (!rows[j].c || !rows[j].c[0] || rows[j].c[0].v.toString().includes("אימון")) break;
                 
                 let exHtml = "";
-                // בניית התרגילים של כל מתאמנת
                 for (let k = 1; k < rows[j].c.length; k += 3) {
                     if (rows[j].c[k]?.v && rows[j].c[k].v !== "...") {
                         exHtml += `
@@ -100,15 +146,12 @@
         document.body.appendChild(script);
     }
 
-    // עדכון שעון
     setInterval(() => {
         const now = new Date();
         document.getElementById('live-clock').innerText = now.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
 
-    // עדכון נתונים מהגיליון כל 10 שניות
     setInterval(fetchData, 10000);
-    
     fetchData();
 </script>
 
