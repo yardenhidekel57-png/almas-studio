@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Smart Sync</title>
+    <title>Alma Studio - Column U Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
@@ -11,7 +11,7 @@
         .studio-name { font-size: 1.8rem; color: #ffd700; font-weight: 900; }
         #live-clock { font-size: 1.5rem; color: #00ffcc; font-weight: bold; }
         .cards-grid { display: grid; gap: 15px; padding: 10px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); overflow-y: auto; height: calc(100vh - 180px); align-content: start; padding-bottom: 120px; }
-        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; margin-bottom: 10px; }
+        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; }
         .trainee-name { font-size: 2.2rem; color: #ffd700; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 8px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
@@ -46,49 +46,47 @@
 
     function parseTime(cell) {
         if (!cell) return null;
-        // אם זה אובייקט זמן של גוגל (HH:MM:SS)
         if (cell.f) {
             const p = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
             if (p) return parseInt(p[1]) * 3600 + parseInt(p[2]) * 60 + (p[3] ? parseInt(p[3]) : 0);
         }
-        // אם זה טקסט רגיל
+        if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
         if (typeof cell.v === 'string') {
             const p = cell.v.match(/(\d{1,2}):(\d{2})/);
             if (p) return parseInt(p[1]) * 3600 + parseInt(p[2]) * 60;
         }
-        // אם זה מספר עשרוני של גוגל
-        if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
         return null;
     }
 
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
-        
         let foundStartSecs = null;
 
-        // סריקה של כל עמודה Z (אינדקס 25) כדי למצוא את המילה START
-        for (let i = 0; i < rows.length; i++) {
-            const cell = rows[i].c && rows[i].c[25] ? rows[i].c[25].v : null;
-            if (cell && cell.toString().toUpperCase().trim() === "START") {
-                // מצאנו START, ניקח את התא שמתחתיו
-                if (rows[i+1] && rows[i+1].c[25]) {
-                    foundStartSecs = parseTime(rows[i+1].c[25]);
-                    break;
+        // סריקה רחבה: בודק את עמודות U (20), V (21), W (22) וגם את B (1) ליתר ביטחון
+        const columnsToSearch = [20, 21, 22, 1, 0]; 
+        
+        for (let colIdx of columnsToSearch) {
+            for (let i = 0; i < rows.length; i++) {
+                const cell = rows[i].c && rows[i].c[colIdx] ? rows[i].c[colIdx].v : null;
+                if (cell && cell.toString().toUpperCase().trim() === "START") {
+                    if (rows[i+1] && rows[i+1].c[colIdx]) {
+                        foundStartSecs = parseTime(rows[i+1].c[colIdx]);
+                        break;
+                    }
                 }
             }
+            if (foundStartSecs !== null) break;
         }
 
         const statusDot = document.getElementById('sync-status');
         const timerText = document.getElementById('display-timer');
 
         if (foundStartSecs !== null) {
-            statusDot.style.background = "#00ffcc"; // נמצא סנכרון!
+            statusDot.style.background = "#00ffcc"; // נמצא START!
             const now = new Date();
             const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            
-            // חישוב זמן שחלף (מטפל גם במעבר יום אם צריך)
-            let elapsed = nowSecs - foundStartSecs;
+            const elapsed = nowSecs - foundStartSecs;
             const remaining = Math.max(0, DURATION - elapsed);
             
             const m = Math.floor(remaining / 60), s = remaining % 60;
@@ -99,7 +97,7 @@
                 lastStartTime = foundStartSecs;
             }
         } else {
-            statusDot.style.background = "#ff4444"; // לא נמצא START בעמודה Z
+            statusDot.style.background = "#ff4444"; // לא נמצא START בעמודות שנבדקו
             timerText.innerText = "07:00";
         }
 
