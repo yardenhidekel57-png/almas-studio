@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - תצוגה חכמה</title>
+    <title>Alma Studio - תצוגה מעודכנת</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -79,9 +79,10 @@
         const now = new Date();
         const currentMins = now.getHours() * 60 + now.getMinutes();
         
-        let latestWorkoutIndex = -1;
+        let selectedWorkoutIndex = -1;
+        let maxWorkoutMins = -1;
 
-        // שלב 1: מציאת האימון האחרון שכבר התחיל
+        // עוברים על כל השורות ומוצאים את האימון האחרון שהזמן שלו כבר הגיע
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             
@@ -92,20 +93,22 @@
                     const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
                     const workoutMins = h * 60 + m;
 
-                    // אם שעת האימון כבר הגיעה או עברה, נסמן אותו כפוטנציאלי להצגה
-                    if (currentMins >= workoutMins) {
-                        latestWorkoutIndex = i;
+                    // אם שעת האימון בגיליון קטנה או שווה לשעה עכשיו, והיא מאוחרת יותר ממה שמצאנו קודם
+                    if (currentMins >= workoutMins && workoutMins > maxWorkoutMins) {
+                        maxWorkoutMins = workoutMins;
+                        selectedWorkoutIndex = i;
                     }
                 }
             }
         }
 
-        // שלב 2: אם מצאנו אימון שהתחיל, נאסוף את המתאמנות שלו
-        if (latestWorkoutIndex !== -1) {
+        // ניקוי המסך לפני הצגת נתונים חדשים
+        grid.innerHTML = "";
+
+        if (selectedWorkoutIndex !== -1) {
             let foundWorkout = [];
-            let j = latestWorkoutIndex + 1;
+            let j = selectedWorkoutIndex + 1;
             
-            // אוסף את כל השורות עד ה"אימון" הבא בגיליון
             while (j < rows.length) {
                 const cellVal = rows[j].c[0] ? rows[j].c[0].v.toString().trim() : "";
                 if (cellVal.startsWith("אימון")) break;
@@ -113,7 +116,7 @@
                 j++;
             }
 
-            grid.innerHTML = foundWorkout.map(row => {
+            const htmlContent = foundWorkout.map(row => {
                 const name = row.c[0].v;
                 let exercisesHtml = '';
                 for (let k = 1; k < row.c.length; k += 3) {
@@ -130,6 +133,8 @@
                 }
                 return `<div class="card"><div class="trainee-name">${name}</div>${exercisesHtml}</div>`;
             }).join('');
+            
+            grid.innerHTML = htmlContent;
         } else {
             grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; margin-top:100px; font-size:4rem; color:#222; font-weight:900;">ALMA STUDIO</div>';
         }
@@ -140,13 +145,18 @@
         if (oldScript) oldScript.remove();
         const script = document.createElement('script');
         script.id = 'sheets-script';
+        // הוספת סימן זמן משתנה כדי למנוע מהדפדפן להשתמש בתוצאה ישנה (Cache Busting)
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
 
-    setInterval(fetchData, 10000);
+    // רענון כל 5 שניות לתגובה מהירה
+    setInterval(fetchData, 5000);
     setInterval(() => {
-        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+        const clockElement = document.getElementById('live-clock');
+        if (clockElement) {
+            clockElement.innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+        }
     }, 1000);
     
     fetchData();
