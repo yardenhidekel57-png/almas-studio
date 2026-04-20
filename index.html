@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - 2 Min Limit</title>
+    <title>Alma Studio - Final Fix</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -52,11 +52,7 @@
 
         .no-workout {
             grid-column: 1/-1; text-align: center; margin-top: 100px;
-            font-size: 4rem; color: #222; font-weight: 900;
-        }
-
-        @media (max-width: 600px) {
-            .cards-grid { grid-template-columns: 1fr; }
+            font-size: 5rem; color: #222; font-weight: 900;
         }
     </style>
 </head>
@@ -79,71 +75,67 @@
         const grid = document.getElementById('main-grid');
         
         const now = new Date();
-        const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+        const currentTotalMins = (now.getHours() * 60) + now.getMinutes();
         
-        let selectedWorkoutIndex = -1;
-        let lastWorkoutTimeMins = -1;
-        let allWorkoutIndices = [];
+        let allWorkouts = [];
 
-        // 1. איתור כל האימונים בגיליון
+        // 1. איסוף כל האימונים מהגיליון
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             if (firstCell.startsWith("אימון")) {
-                const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
+                const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
                 if (timeMatch) {
-                    const h = parseInt(timeMatch[1]);
-                    const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-                    const workoutTotalMins = h * 60 + m;
-                    
-                    allWorkoutIndices.push({ index: i, mins: workoutTotalMins });
-                    
-                    if (currentTotalMins >= workoutTotalMins) {
-                        selectedWorkoutIndex = i;
-                        lastWorkoutTimeMins = workoutTotalMins;
-                    }
+                    const workoutMins = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
+                    allWorkouts.push({ index: i, mins: workoutMins });
                 }
             }
         }
 
-        // 2. בדיקה אם האימון הנוכחי הוא האימון האחרון ברשימה
-        const isLastInList = allWorkoutIndices.length > 0 && 
-                             selectedWorkoutIndex === allWorkoutIndices[allWorkoutIndices.length - 1].index;
+        // 2. מציאת האימון הנוכחי (זה שהשעה שלו כבר הגיעה אבל הוא הכי מאוחר מביניהם)
+        let activeWorkout = null;
+        for (let i = 0; i < allWorkouts.length; i++) {
+            if (currentTotalMins >= allWorkouts[i].mins) {
+                activeWorkout = allWorkouts[i];
+            }
+        }
 
         grid.innerHTML = "";
 
-        // 3. לוגיקת הצגה:
-        // אם זה האימון האחרון, נציג אותו רק אם עברו פחות מ-2 דקות
-        if (selectedWorkoutIndex !== -1) {
-            const minutesPassedSinceStart = currentTotalMins - lastWorkoutTimeMins;
+        if (activeWorkout) {
+            // בדיקה אם זה האימון האחרון ברשימה הכללית של הגיליון
+            const isLastInSheet = (activeWorkout.index === allWorkouts[allWorkouts.length - 1].index);
+            
+            // חישוב כמה זמן עבר מתחילת האימון
+            const diff = currentTotalMins - activeWorkout.mins;
 
-            if (isLastInList && minutesPassedSinceStart >= 2) {
-                // עברו 2 דקות מהאימון האחרון - מנקים מסך
+            // אם זה האימון האחרון ועברו 2 דקות או יותר -> מנקים
+            if (isLastInSheet && diff >= 2) {
                 grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>';
                 return;
             }
 
-            // הצגת המתאמנות
-            let foundWorkout = [];
-            let j = selectedWorkoutIndex + 1;
+            // הצגת המתאמנות לאימון שנבחר
+            let foundRows = [];
+            let j = activeWorkout.index + 1;
             while (j < rows.length) {
                 const cellVal = rows[j].c[0] ? rows[j].c[0].v.toString().trim() : "";
                 if (cellVal.startsWith("אימון")) break;
-                if (cellVal !== "") foundWorkout.push(rows[j]);
+                if (cellVal !== "") foundRows.push(rows[j]);
                 j++;
             }
 
-            grid.innerHTML = foundWorkout.map(row => {
+            grid.innerHTML = foundRows.map(row => {
                 const name = row.c[0].v;
-                let exercisesHtml = '';
+                let exHtml = '';
                 for (let k = 1; k < row.c.length; k += 3) {
                     const ex = row.c[k] ? row.c[k].v : '';
                     const w = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
                     const r = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
                     if (ex && ex !== "...") {
-                        exercisesHtml += `<div class="exercise-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
+                        exHtml += `<div class="exercise-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
                     }
                 }
-                return `<div class="card"><div class="trainee-name">${name}</div>${exercisesHtml}</div>`;
+                return `<div class="card"><div class="trainee-name">${name}</div>${exHtml}</div>`;
             }).join('');
         } else {
             grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>';
@@ -151,8 +143,8 @@
     }
 
     function fetchData() {
-        const oldScript = document.getElementById('sheets-script');
-        if (oldScript) oldScript.remove();
+        const old = document.getElementById('sheets-script');
+        if (old) old.remove();
         const script = document.createElement('script');
         script.id = 'sheets-script';
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
@@ -163,7 +155,6 @@
     setInterval(() => {
         document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
-    
     fetchData();
 </script>
 </body>
