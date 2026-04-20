@@ -3,41 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Smart Sync</title>
+    <title>Alma Studio - Sync Fix</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
         body { display: flex; flex-direction: column; padding: 15px; color: #fff; font-family: system-ui, sans-serif; }
-        
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 25px; background-color: #111; border-radius: 20px;
-            border-bottom: 4px solid #00ffcc; margin-bottom: 15px; flex-shrink: 0;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 25px; background-color: #111; border-radius: 20px; border-bottom: 4px solid #00ffcc; margin-bottom: 15px; }
         .studio-name { font-size: 2.5rem; color: #ffd700; font-weight: 900; }
         #live-clock { font-size: 2.2rem; color: #00ffcc; font-weight: bold; }
-
-        .cards-grid { 
-            flex-grow: 1; display: grid; gap: 20px; 
-            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); 
-            overflow-y: auto; padding-bottom: 160px; align-content: start;
-        }
-
+        .cards-grid { flex-grow: 1; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); overflow-y: auto; padding-bottom: 160px; align-content: start; }
         .card { background-color: #161616; border-radius: 30px; padding: 35px; border: 3px solid #282828; }
         .trainee-name { font-size: 3.5rem; color: #ffd700; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #333; padding-bottom: 15px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 2.1rem; padding: 12px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
         .reps { color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; padding: 4px 15px; border-radius: 12px; }
-
-        .sync-timer-panel { 
-            position: fixed; bottom: 20px; left: 20px; right: 20px; 
-            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px);
-            border-radius: 35px; padding: 20px 40px; border-top: 4px solid #ff9f43;
-            display: flex; justify-content: space-between; align-items: center; z-index: 1000;
-        }
+        .sync-timer-panel { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px); border-radius: 35px; padding: 20px 40px; border-top: 4px solid #ff9f43; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
         #display-timer { font-size: 6rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
         .sync-label { color: #555; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
-        .no-workout { grid-column: 1/-1; text-align: center; margin-top: 100px; font-size: 5rem; color: #222; font-weight: 900; }
+        #status-dot { width:20px; height:20px; border-radius:50%; background: #444; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
@@ -53,7 +36,7 @@
 <div class="sync-timer-panel">
     <div class="sync-label">SYNC LIVE</div>
     <div id="display-timer">07:00</div>
-    <div id="status-dot" style="width:20px; height:20px; background:#444; border-radius:50%;"></div>
+    <div id="status-dot"></div>
 </div>
 
 <audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -64,87 +47,96 @@
     const WORKOUT_CUTOFF = 70;
     let lastState = "STOP";
 
+    function getSecondsFromCell(cell) {
+        if (!cell) return null;
+        
+        // 1. ניסיון לפי פורמט טקסט (13:58:00)
+        if (cell.f) {
+            const parts = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
+            if (parts) return parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + (parts[3] ? parseInt(parts[3]) : 0);
+        }
+        
+        // 2. ניסיון לפי ערך מספרי (גוגל שומר זמן כשבר של יום)
+        if (typeof cell.v === 'number') {
+            return Math.round(cell.v * 86400);
+        }
+
+        // 3. ניסיון לפי אובייקט תאריך של גוגל
+        if (cell.v && cell.v.toString().includes("Date")) {
+            const d = cell.v.match(/\d+/g);
+            if (d && d.length >= 5) return parseInt(d[3]) * 3600 + parseInt(d[4]) * 60 + (d[5] ? parseInt(d[5]) : 0);
+        }
+        
+        return null;
+    }
+
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
         const now = new Date();
-        const currentTotalMins = (now.getHours() * 60) + now.getMinutes();
+        const currentSecondsToday = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
         
-        // --- חיפוש דינמי של טיימר (START ושעה) בכל הגיליון ---
-        let syncState = "STOP";
-        let syncTimeStr = "";
-        
+        let syncActive = false;
+        let startSeconds = null;
+
+        // חיפוש START
         for (let r = 0; r < rows.length; r++) {
             for (let c = 0; c < rows[r].c.length; c++) {
-                if (rows[r].c[c] && rows[r].c[c].v) {
-                    let val = rows[r].c[c].v.toString().toUpperCase().trim();
-                    if (val === "START") {
-                        syncState = "START";
-                        // מחפש את השעה בתא שמתחת ל-START
-                        if (rows[r+1] && rows[r+1].c[c]) {
-                            syncTimeStr = rows[r+1].c[c].f || rows[r+1].c[c].v.toString();
-                        }
+                if (rows[r].c[c] && rows[r].c[c].v && rows[r].c[c].v.toString().toUpperCase().trim() === "START") {
+                    syncActive = true;
+                    if (rows[r+1] && rows[r+1].c[c]) {
+                        startSeconds = getSecondsFromCell(rows[r+1].c[c]);
                     }
                 }
             }
         }
 
-        // עדכון צבע נקודת סטטוס
-        document.getElementById('status-dot').style.background = (syncState === "START") ? "#ff9f43" : "#444";
+        document.getElementById('status-dot').style.background = (syncActive && startSeconds !== null) ? "#ff9f43" : "#444";
 
-        // --- לוגיקת כרטיסיות ---
+        // כרטיסיות (נשאר ללא שינוי)
+        const grid = document.getElementById('main-grid');
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             if (firstCell.startsWith("אימון")) {
-                const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
-                if (timeMatch) allWorkouts.push({ index: i, mins: (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]) });
+                const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
+                if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
             }
         }
-        let activeWorkout = null;
-        for (let w of allWorkouts) { if (currentTotalMins >= w.mins) activeWorkout = w; }
-        const grid = document.getElementById('main-grid');
-        grid.innerHTML = "";
-        if (activeWorkout) {
-            const isLast = (activeWorkout.index === allWorkouts[allWorkouts.length - 1].index);
-            if (isLast && (currentTotalMins - activeWorkout.mins >= WORKOUT_CUTOFF)) {
-                grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>';
+        let activeW = null;
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        for (let w of allWorkouts) { if (nowMins >= w.mins) activeW = w; }
+        
+        if (activeW) {
+            const isLast = (activeW.index === allWorkouts[allWorkouts.length - 1].index);
+            if (isLast && (nowMins - activeW.mins >= WORKOUT_CUTOFF)) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; margin-top:100px; font-size:5rem; color:#222; font-weight:900;">ALMA STUDIO</div>';
             } else {
-                let j = activeWorkout.index + 1;
-                let html = "";
+                let html = ""; let j = activeW.index + 1;
                 while (j < rows.length) {
-                    if (!rows[j].c[0]) break;
-                    const cellVal = rows[j].c[0].v.toString().trim();
-                    if (cellVal.startsWith("אימון")) break;
-                    if (cellVal !== "") {
-                        let exHtml = "";
-                        for (let k = 1; k < rows[j].c.length; k += 3) {
-                            const ex = rows[j].c[k] ? rows[j].c[k].v : '';
-                            const w = rows[j].c[k+1] ? rows[j].c[k+1].v : '';
-                            const r = rows[j].c[k+2] ? rows[j].c[k+2].v : '-';
-                            if (ex && ex !== "...") exHtml += `<div class="exercise-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
+                    if (!rows[j].c || !rows[j].c[0]) break;
+                    if (rows[j].c[0].v.toString().includes("אימון")) break;
+                    let ex = "";
+                    for (let k = 1; k < rows[j].c.length; k += 3) {
+                        if (rows[j].c[k] && rows[j].c[k].v && rows[j].c[k].v !== "...") {
+                            ex += `<div class="exercise-row"><div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div><span class="reps">${rows[j].c[k+2]?.v || '-'}</span></div>`;
                         }
-                        html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${exHtml}</div>`;
                     }
+                    html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${ex}</div>`;
                     j++;
                 }
                 grid.innerHTML = html;
             }
-        } else { grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>'; }
+        }
 
-        // --- לוגיקת טיימר ---
-        if (syncState === "START" && syncTimeStr) {
-            const t = syncTimeStr.match(/(\d{1,2}):(\d{2})/);
-            if (t) {
-                const startTime = new Date();
-                startTime.setHours(parseInt(t[1]), parseInt(t[2]), 0);
-                const elapsed = Math.floor((new Date() - startTime) / 1000);
-                const remaining = Math.max(0, TIMER_DURATION - elapsed);
-                const m = Math.floor(remaining / 60), s = remaining % 60;
-                document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                if (remaining === 0 && lastState === "START") document.getElementById('beep').play();
-                lastState = (remaining === 0) ? "DONE" : "START";
-            }
+        // טיימר
+        if (syncActive && startSeconds !== null) {
+            const elapsed = currentSecondsToday - startSeconds;
+            const remaining = Math.max(0, TIMER_DURATION - elapsed);
+            const m = Math.floor(remaining / 60), s = remaining % 60;
+            document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            if (remaining === 0 && lastState === "START") document.getElementById('beep').play();
+            lastState = (remaining === 0) ? "DONE" : "START";
         } else {
             document.getElementById('display-timer').innerText = "07:00";
             lastState = "STOP";
@@ -152,10 +144,7 @@
     }
 
     function fetchData() {
-        const old = document.getElementById('sheets-script');
-        if (old) old.remove();
         const script = document.createElement('script');
-        script.id = 'sheets-script';
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
