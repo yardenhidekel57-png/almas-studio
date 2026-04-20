@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Sync Timer Final</title>
+    <title>Alma Studio - Smart Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -23,7 +23,7 @@
             overflow-y: auto; padding-bottom: 160px; align-content: start;
         }
 
-        .card { background-color: #161616; border-radius: 30px; padding: 35px; border: 3px solid #282828; box-shadow: 0 15px 35px rgba(0,0,0,0.7); }
+        .card { background-color: #161616; border-radius: 30px; padding: 35px; border: 3px solid #282828; }
         .trainee-name { font-size: 3.5rem; color: #ffd700; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #333; padding-bottom: 15px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 2.1rem; padding: 12px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
@@ -35,15 +35,12 @@
             border-radius: 35px; padding: 20px 40px; border-top: 4px solid #ff9f43;
             display: flex; justify-content: space-between; align-items: center; z-index: 1000;
         }
-        #display-timer { font-size: 5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
+        #display-timer { font-size: 6rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
         .sync-label { color: #555; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
         .no-workout { grid-column: 1/-1; text-align: center; margin-top: 100px; font-size: 5rem; color: #222; font-weight: 900; }
-        #debug-info { position: fixed; top: 0; left: 0; font-size: 10px; color: #333; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
-
-<div id="debug-info"></div>
 
 <div class="header">
     <div id="live-clock">00:00</div>
@@ -56,7 +53,7 @@
 <div class="sync-timer-panel">
     <div class="sync-label">SYNC LIVE</div>
     <div id="display-timer">07:00</div>
-    <div id="status-dot" style="width:15px; height:15px; background:#ff9f43; border-radius:50%;"></div>
+    <div id="status-dot" style="width:20px; height:20px; background:#444; border-radius:50%;"></div>
 </div>
 
 <audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -73,21 +70,39 @@
         const now = new Date();
         const currentTotalMins = (now.getHours() * 60) + now.getMinutes();
         
+        // --- חיפוש דינמי של טיימר (START ושעה) בכל הגיליון ---
+        let syncState = "STOP";
+        let syncTimeStr = "";
+        
+        for (let r = 0; r < rows.length; r++) {
+            for (let c = 0; c < rows[r].c.length; c++) {
+                if (rows[r].c[c] && rows[r].c[c].v) {
+                    let val = rows[r].c[c].v.toString().toUpperCase().trim();
+                    if (val === "START") {
+                        syncState = "START";
+                        // מחפש את השעה בתא שמתחת ל-START
+                        if (rows[r+1] && rows[r+1].c[c]) {
+                            syncTimeStr = rows[r+1].c[c].f || rows[r+1].c[c].v.toString();
+                        }
+                    }
+                }
+            }
+        }
+
+        // עדכון צבע נקודת סטטוס
+        document.getElementById('status-dot').style.background = (syncState === "START") ? "#ff9f43" : "#444";
+
         // --- לוגיקת כרטיסיות ---
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             if (firstCell.startsWith("אימון")) {
                 const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
-                if (timeMatch) {
-                    allWorkouts.push({ index: i, mins: (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]) });
-                }
+                if (timeMatch) allWorkouts.push({ index: i, mins: (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]) });
             }
         }
-
         let activeWorkout = null;
         for (let w of allWorkouts) { if (currentTotalMins >= w.mins) activeWorkout = w; }
-
         const grid = document.getElementById('main-grid');
         grid.innerHTML = "";
         if (activeWorkout) {
@@ -98,19 +113,18 @@
                 let j = activeWorkout.index + 1;
                 let html = "";
                 while (j < rows.length) {
-                    const row = rows[j];
-                    if (!row || !row.c || !row.c[0]) break;
-                    const cellVal = row.c[0].v.toString().trim();
+                    if (!rows[j].c[0]) break;
+                    const cellVal = rows[j].c[0].v.toString().trim();
                     if (cellVal.startsWith("אימון")) break;
                     if (cellVal !== "") {
                         let exHtml = "";
-                        for (let k = 1; k < row.c.length; k += 3) {
-                            const ex = row.c[k] ? row.c[k].v : '';
-                            const w = row.c[k+1] ? row.c[k+1].v : '';
-                            const r = row.c[k+2] ? row.c[k+2].v : '-';
+                        for (let k = 1; k < rows[j].c.length; k += 3) {
+                            const ex = rows[j].c[k] ? rows[j].c[k].v : '';
+                            const w = rows[j].c[k+1] ? rows[j].c[k+1].v : '';
+                            const r = rows[j].c[k+2] ? rows[j].c[k+2].v : '-';
                             if (ex && ex !== "...") exHtml += `<div class="exercise-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
                         }
-                        html += `<div class="card"><div class="trainee-name">${row.c[0].v}</div>${exHtml}</div>`;
+                        html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${exHtml}</div>`;
                     }
                     j++;
                 }
@@ -118,36 +132,18 @@
             }
         } else { grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>'; }
 
-        // --- לוגיקת טיימר משופרת ---
-        const syncStateRaw = rows[0].c[25] ? rows[0].c[25].v : "STOP";
-        const syncState = syncStateRaw.toString().toUpperCase().trim();
-        
-        // שליפת השעה מתא Z2 (עמודה 25)
-        let syncTimeStr = "";
-        if (rows[1] && rows[1].c[25]) {
-            // טיפול בפורמט "Date" שגוגל לפעמים שולח
-            syncTimeStr = rows[1].c[25].f ? rows[1].c[25].f : rows[1].c[25].v.toString();
-        }
-
+        // --- לוגיקת טיימר ---
         if (syncState === "START" && syncTimeStr) {
-            const t = syncTimeStr.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
+            const t = syncTimeStr.match(/(\d{1,2}):(\d{2})/);
             if (t) {
                 const startTime = new Date();
-                startTime.setHours(parseInt(t[1]), parseInt(t[2]), t[3] ? parseInt(t[3]) : 0);
-                
+                startTime.setHours(parseInt(t[1]), parseInt(t[2]), 0);
                 const elapsed = Math.floor((new Date() - startTime) / 1000);
                 const remaining = Math.max(0, TIMER_DURATION - elapsed);
-                
-                const m = Math.floor(remaining / 60);
-                const s = remaining % 60;
+                const m = Math.floor(remaining / 60), s = remaining % 60;
                 document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                
-                if (remaining === 0 && lastState === "START") {
-                    document.getElementById('beep').play();
-                    lastState = "DONE";
-                } else if (remaining > 0) {
-                    lastState = "START";
-                }
+                if (remaining === 0 && lastState === "START") document.getElementById('beep').play();
+                lastState = (remaining === 0) ? "DONE" : "START";
             }
         } else {
             document.getElementById('display-timer').innerText = "07:00";
@@ -163,7 +159,6 @@
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
-
     setInterval(fetchData, 5000);
     setInterval(() => {
         document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
