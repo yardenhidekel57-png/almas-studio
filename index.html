@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Universal Sync</title>
+    <title>Alma Studio - Master Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
@@ -19,32 +19,34 @@
         .cards-grid { 
             display: grid; gap: 15px; padding: 10px;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            overflow-y: auto; height: calc(100vh - 220px); align-content: start;
-            padding-bottom: 100px;
+            overflow-y: auto; height: calc(100vh - 200px); align-content: start;
+            padding-bottom: 120px;
         }
 
-        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; margin-bottom: 10px; }
+        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; }
         .trainee-name { font-size: 2.2rem; color: #ffd700; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 8px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
         .reps { color: #00ffcc; font-weight: bold; border: 1px solid #00ffcc; padding: 2px 8px; border-radius: 8px; }
 
+        /* פאנל שליטה */
         .control-panel { 
             position: fixed; bottom: 0; left: 0; right: 0; 
-            background: rgba(17, 17, 17, 0.95); padding: 15px; border-top: 3px solid #ff9f43;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            z-index: 1000; backdrop-filter: blur(10px);
+            background: rgba(17, 17, 17, 0.95); padding: 20px; border-top: 3px solid #ff9f43;
+            display: flex; flex-direction: column; align-items: center; z-index: 1000; backdrop-filter: blur(10px);
         }
-        #display-timer { font-size: 3.5rem; font-weight: 900; color: #ff9f43; line-height: 1; margin-bottom: 5px; }
+        #display-timer { font-size: 4rem; font-weight: 900; color: #ff9f43; }
         
-        .buttons-row { display: flex; gap: 15px; width: 100%; justify-content: center; }
-        /* הכפתורים יופיעו רק באייפון (במכשירים עם מסך קטן) */
-        @media (min-width: 1024px) { .buttons-row { display: none; } }
+        .buttons-row { display: none; gap: 15px; width: 100%; justify-content: center; margin-top: 10px; }
+        
+        /* הצגת כפתורים רק באייפון (מסך קטן) */
+        @media (max-width: 768px) {
+            .buttons-row { display: flex; }
+        }
 
-        .btn { padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; }
-        .btn-start { background: #00ffcc; color: #000; box-shadow: 0 4px 0 #00ccaa; }
-        .btn-reset { background: #ff4444; color: #fff; box-shadow: 0 4px 0 #cc0000; }
-        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn { padding: 15px 35px; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; }
+        .btn-start { background: #00ffcc; color: #000; }
+        .btn-reset { background: #ff4444; color: #fff; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
@@ -60,8 +62,8 @@
 <div class="control-panel">
     <div id="display-timer">07:00</div>
     <div class="buttons-row">
-        <button class="btn btn-start" onclick="sendSignal('start')">הפעל</button>
-        <button class="btn btn-reset" onclick="sendSignal('reset')">איפוס</button>
+        <button class="btn btn-start" onclick="updateRemote(true)">הפעל</button>
+        <button class="btn btn-reset" onclick="updateRemote(false)">איפוס</button>
     </div>
 </div>
 
@@ -69,21 +71,23 @@
 
 <script>
     const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
-    const SYNC_URL = 'https://keyvalue.xyz/v1/alma_studio_sync_2026';
+    // מפתח ייחודי לסנכרון שלך
+    const SYNC_KEY = 'alma_studio_timer_sync_v1';
+    const API_URL = `https://keyvalue.xyz/v1/${SYNC_KEY}`;
     const DURATION = 7 * 60;
-    let lastSoundTime = 0;
+    let lastStartTime = 0;
 
-    // שליחת פקודה (מהאייפון)
-    async function sendSignal(type) {
-        const val = (type === 'start') ? Math.floor(Date.now() / 1000) : 0;
-        try { await fetch(SYNC_URL, { method: 'POST', body: val.toString() }); } 
-        catch (e) { console.error("Sync error"); }
+    // פונקציית שליטה (רק מהאייפון)
+    async function updateRemote(start) {
+        const val = start ? Math.floor(Date.now() / 1000) : 0;
+        await fetch(API_URL, { method: 'POST', body: val.toString() });
+        checkSync();
     }
 
-    // סנכרון זמן מול השרת (כל המכשירים)
-    async function updateSync() {
+    // סנכרון כל המכשירים
+    async function checkSync() {
         try {
-            const res = await fetch(SYNC_URL);
+            const res = await fetch(API_URL);
             const startTime = parseInt(await res.text());
             
             if (startTime > 0) {
@@ -94,17 +98,18 @@
                 const m = Math.floor(remaining / 60), s = remaining % 60;
                 document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
                 
-                if (remaining === 0 && lastSoundTime !== startTime) {
+                // השמעת צליל רק פעם אחת בסיום
+                if (remaining === 0 && lastStartTime !== startTime) {
                     document.getElementById('beep').play();
-                    lastSoundTime = startTime;
+                    lastStartTime = startTime; 
                 }
             } else {
                 document.getElementById('display-timer').innerText = "07:00";
             }
-        } catch (e) { }
+        } catch (e) { console.error("Sync error"); }
     }
 
-    // נתוני גוגל שיטס
+    // נתוני גוגל שיטס (כרטיסיות)
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
@@ -112,26 +117,27 @@
         const nowMins = now.getHours() * 60 + now.getMinutes();
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
-            const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            if (firstCell.startsWith("אימון")) {
-                const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
+            const cell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+            if (cell.startsWith("אימון")) {
+                const tm = cell.match(/(\d{1,2}):(\d{2})/);
                 if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
             }
         }
         let activeW = null;
         for (let w of allWorkouts) { if (nowMins >= w.mins) activeW = w; }
+        
         const grid = document.getElementById('main-grid');
         if (activeW) {
             let html = ""; let j = activeW.index + 1;
             while (j < rows.length) {
                 if (!rows[j].c || !rows[j].c[0] || rows[j].c[0].v.toString().includes("אימון")) break;
-                let exHtml = "";
+                let ex = "";
                 for (let k = 1; k < rows[j].c.length; k += 3) {
                     if (rows[j].c[k]?.v && rows[j].c[k].v !== "...") {
-                        exHtml += `<div class="exercise-row"><div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div><span class="reps">${rows[j].c[k+2]?.v || '-'}</span></div>`;
+                        ex += `<div class="exercise-row"><div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div><span class="reps">${rows[j].c[k+2]?.v || '-'}</span></div>`;
                     }
                 }
-                html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${exHtml}</div>`;
+                html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${ex}</div>`;
                 j++;
             }
             grid.innerHTML = html;
@@ -144,11 +150,12 @@
         document.body.appendChild(script);
     }
 
-    setInterval(fetchData, 10000);
-    setInterval(updateSync, 2000); // סנכרון טיימר כל 2 שניות
+    setInterval(checkSync, 2000); // בדיקת סנכרון כל 2 שניות
+    setInterval(fetchData, 10000); // עדכון מתאמנות כל 10 שניות
     setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}); }, 1000);
+    
     fetchData();
-    updateSync();
+    checkSync();
 </script>
 </body>
 </html>
