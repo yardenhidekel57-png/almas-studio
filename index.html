@@ -3,32 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Master Sync</title>
+    <title>Alma Studio - Final Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
-        
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #111; border-radius: 15px; border-bottom: 3px solid #00ffcc; margin: 10px; flex-shrink: 0; }
         .studio-name { font-size: 1.8rem; color: #ffd700; font-weight: 900; }
         #live-clock { font-size: 1.5rem; color: #00ffcc; font-weight: bold; }
-
-        .cards-grid { display: grid; gap: 15px; padding: 10px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); overflow-y: auto; height: calc(100vh - 200px); align-content: start; padding-bottom: 120px; }
-        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; }
+        .cards-grid { display: grid; gap: 15px; padding: 10px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); overflow-y: auto; height: calc(100vh - 180px); align-content: start; padding-bottom: 120px; }
+        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; margin-bottom: 10px; }
         .trainee-name { font-size: 2.2rem; color: #ffd700; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 8px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
         .reps { color: #00ffcc; font-weight: bold; border: 1px solid #00ffcc; padding: 2px 8px; border-radius: 8px; }
-
-        .control-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 17, 17, 0.95); padding: 20px; border-top: 3px solid #ff9f43; display: flex; flex-direction: column; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
-        #display-timer { font-size: 4rem; font-weight: 900; color: #ff9f43; }
-        .buttons-row { display: flex; gap: 15px; width: 100%; justify-content: center; margin-top: 10px; }
-        
-        /* הסתרת כפתורים במכשירים גדולים (פלאזמה) */
-        @media (min-width: 1024px) { .buttons-row { display: none; } }
-
-        .btn { padding: 15px 35px; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; -webkit-appearance: none; }
-        .btn-start { background: #00ffcc; color: #000; }
-        .btn-reset { background: #ff4444; color: #fff; }
+        .timer-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 17, 17, 0.95); padding: 15px; border-top: 3px solid #ff9f43; display: flex; justify-content: space-around; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
+        #display-timer { font-size: 4rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
+        #sync-status { width: 15px; height: 15px; border-radius: 50%; background: #444; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
@@ -41,12 +31,10 @@
 
 <div id="main-grid" class="cards-grid"></div>
 
-<div class="control-panel">
+<div class="timer-panel">
+    <div id="sync-status"></div>
     <div id="display-timer">07:00</div>
-    <div class="buttons-row">
-        <button class="btn btn-start" onclick="triggerStart()">הפעל</button>
-        <button class="btn btn-reset" onclick="triggerReset()">איפוס</button>
-    </div>
+    <div style="width: 15px;"></div>
 </div>
 
 <audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -54,55 +42,60 @@
 <script>
     const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
     const DURATION = 7 * 60;
-    let lastStartTimeVal = 0;
+    let lastStartTime = 0;
 
-    // פונקציה לעדכון גוגל שיטס מהאייפון (דורש Apps Script או שירות מתווך - נשתמש בפתרון הזרקה ישיר)
-    function triggerStart() {
-        const timestamp = Math.floor(Date.now() / 1000);
-        // שימוש ב-Google Forms כדי לעדכן את הגיליון בצורה עקיפה (הדרך היחידה לכתוב לשיטס בלי שרת)
-        // אם אין לך Google Form מחובר, נשתמש בפתרון ה-URL הישיר
-        updateSheetValue(timestamp);
-    }
-
-    function triggerReset() {
-        updateSheetValue(0);
-    }
-
-    function updateSheetValue(val) {
-        // בגלל מגבלות אבטחה של אפל, הדרך הכי טובה לעדכן היא דרך לינק קטן שנפתח ונסגר
-        // לצורך הפשטות כרגע, נשתמש במערכת הסנכרון הפנימית של גוגל
-        const scriptURL = `https://script.google.com/macros/s/AKfycbzL7_q7z5-D-E1D8_k_B0K5_q9_K_P_N/exec?val=${val}`; // זה ידרוש הגדרה קצרה
-        fetch(scriptURL, { mode: 'no-cors' });
-        alert("הפקודה נשלחה! הטיימר יתעדכן תוך כמה שניות");
+    function getSecondsFromCell(cell) {
+        if (!cell) return null;
+        if (cell.f) {
+            const parts = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
+            if (parts) return parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + (parts[3] ? parseInt(parts[3]) : 0);
+        }
+        if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
+        return null;
     }
 
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
         
-        // ננסה למצוא את ה-START בתא Z1 (עמודה 25)
-        let remoteStart = 0;
-        if (rows[0] && rows[0].c && rows[0].c[25]) {
-            remoteStart = parseInt(rows[0].c[25].v) || 0;
+        let foundStart = false;
+        let startSecs = null;
+
+        // חיפוש המילה START בכל הגיליון
+        for (let r = 0; r < rows.length; r++) {
+            if (!rows[r].c) continue;
+            for (let c = 0; c < rows[r].c.length; c++) {
+                if (rows[r].c[c] && rows[r].c[c].v && rows[r].c[c].v.toString().toUpperCase().trim() === "START") {
+                    foundStart = true;
+                    if (rows[r+1] && rows[r+1].c[c]) {
+                        startSecs = getSecondsFromCell(rows[r+1].c[c]);
+                    }
+                    break;
+                }
+            }
+            if (foundStart) break;
         }
 
-        if (remoteStart > 0) {
-            const now = Math.floor(Date.now() / 1000);
-            const elapsed = now - remoteStart;
+        const statusDot = document.getElementById('sync-status');
+        if (foundStart && startSecs !== null) {
+            statusDot.style.background = "#00ffcc";
+            const now = new Date();
+            const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            const elapsed = nowSecs - startSecs;
             const remaining = Math.max(0, DURATION - elapsed);
             
             const m = Math.floor(remaining / 60), s = remaining % 60;
             document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
             
-            if (remaining === 0 && lastStartTimeVal !== remoteStart) {
+            if (remaining === 0 && lastStartTime !== startSecs) {
                 document.getElementById('beep').play();
-                lastStartTimeVal = remoteStart;
+                lastStartTime = startSecs;
             }
         } else {
+            statusDot.style.background = "#444";
             document.getElementById('display-timer').innerText = "07:00";
         }
 
-        // כרטיסיות מתאמנות
         renderCards(rows);
     }
 
@@ -143,7 +136,7 @@
         document.body.appendChild(script);
     }
 
-    setInterval(fetchData, 4000); // בדיקה כל 4 שניות לסנכרון מהיר
+    setInterval(fetchData, 4000);
     setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}); }, 1000);
     fetchData();
 </script>
