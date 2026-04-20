@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - 2 Min Buffer</title>
+    <title>Alma Studio - 2 Min Limit</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -43,7 +43,6 @@
             display: flex; justify-content: space-between; align-items: center; 
             font-size: 2.3rem; padding: 15px 0; border-bottom: 1px solid #222;
         }
-        .exercise-name { flex: 1; }
         .weight { color: #ff9f43; font-weight: bold; margin-right: 15px; }
         .reps { 
             color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; 
@@ -51,10 +50,13 @@
             min-width: 90px; text-align: center;
         }
 
+        .no-workout {
+            grid-column: 1/-1; text-align: center; margin-top: 100px;
+            font-size: 4rem; color: #222; font-weight: 900;
+        }
+
         @media (max-width: 600px) {
             .cards-grid { grid-template-columns: 1fr; }
-            .trainee-name { font-size: 2.6rem; }
-            .exercise-row { font-size: 1.7rem; }
         }
     </style>
 </head>
@@ -80,44 +82,49 @@
         const currentTotalMins = now.getHours() * 60 + now.getMinutes();
         
         let selectedWorkoutIndex = -1;
-        let lastFoundMins = -1;
+        let lastWorkoutTimeMins = -1;
+        let allWorkoutIndices = [];
 
-        // סורק את הגיליון למציאת האימון הרלוונטי ביותר
+        // 1. איתור כל האימונים בגיליון
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            
             if (firstCell.startsWith("אימון")) {
                 const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
                 if (timeMatch) {
                     const h = parseInt(timeMatch[1]);
                     const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
                     const workoutTotalMins = h * 60 + m;
-
-                    // מציג אם השעה כבר הגיעה
+                    
+                    allWorkoutIndices.push({ index: i, mins: workoutTotalMins });
+                    
                     if (currentTotalMins >= workoutTotalMins) {
                         selectedWorkoutIndex = i;
-                        lastFoundMins = workoutTotalMins;
+                        lastWorkoutTimeMins = workoutTotalMins;
                     }
                 }
             }
         }
 
-        // בדיקה: האם האימון שמצאנו הוא האימון האחרון בגיליון?
-        // אם כן, הוא יישאר ל-2 דקות גם אם השעה עברה (במידה והוא האימון האחרון ברשימה)
-        let isLastInSheet = true;
-        for (let k = selectedWorkoutIndex + 1; k < rows.length; k++) {
-            if (rows[k].c[0] && rows[k].c[0].v.toString().trim().startsWith("אימון")) {
-                isLastInSheet = false;
-                break;
-            }
-        }
+        // 2. בדיקה אם האימון הנוכחי הוא האימון האחרון ברשימה
+        const isLastInList = allWorkoutIndices.length > 0 && 
+                             selectedWorkoutIndex === allWorkoutIndices[allWorkoutIndices.length - 1].index;
 
         grid.innerHTML = "";
 
+        // 3. לוגיקת הצגה:
+        // אם זה האימון האחרון, נציג אותו רק אם עברו פחות מ-2 דקות
         if (selectedWorkoutIndex !== -1) {
+            const minutesPassedSinceStart = currentTotalMins - lastWorkoutTimeMins;
+
+            if (isLastInList && minutesPassedSinceStart >= 2) {
+                // עברו 2 דקות מהאימון האחרון - מנקים מסך
+                grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>';
+                return;
+            }
+
+            // הצגת המתאמנות
             let foundWorkout = [];
             let j = selectedWorkoutIndex + 1;
-            
             while (j < rows.length) {
                 const cellVal = rows[j].c[0] ? rows[j].c[0].v.toString().trim() : "";
                 if (cellVal.startsWith("אימון")) break;
@@ -125,7 +132,7 @@
                 j++;
             }
 
-            const htmlContent = foundWorkout.map(row => {
+            grid.innerHTML = foundWorkout.map(row => {
                 const name = row.c[0].v;
                 let exercisesHtml = '';
                 for (let k = 1; k < row.c.length; k += 3) {
@@ -133,19 +140,13 @@
                     const w = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
                     const r = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
                     if (ex && ex !== "...") {
-                        exercisesHtml += `
-                            <div class="exercise-row">
-                                <div class="exercise-name">${ex} <span class="weight">${w}</span></div>
-                                <span class="reps">${r}</span>
-                            </div>`;
+                        exercisesHtml += `<div class="exercise-row"><div>${ex} <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
                     }
                 }
                 return `<div class="card"><div class="trainee-name">${name}</div>${exercisesHtml}</div>`;
             }).join('');
-            
-            grid.innerHTML = htmlContent;
         } else {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; margin-top:100px; font-size:4rem; color:#222; font-weight:900;">ALMA STUDIO</div>';
+            grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>';
         }
     }
 
