@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Direct Sync</title>
+    <title>Alma Studio - Smart Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
@@ -18,7 +18,7 @@
         .reps { color: #00ffcc; font-weight: bold; border: 1px solid #00ffcc; padding: 2px 8px; border-radius: 8px; }
         .timer-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 17, 17, 0.95); padding: 15px; border-top: 3px solid #ff9f43; display: flex; justify-content: space-around; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
         #display-timer { font-size: 4.5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
-        #sync-status { width: 15px; height: 15px; border-radius: 50%; background: #444; }
+        #sync-status { width: 15px; height: 15px; border-radius: 50%; background: #ff4444; transition: background 0.5s; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
@@ -44,12 +44,19 @@
     const DURATION = 7 * 60;
     let lastStartTime = 0;
 
-    function getSeconds(cell) {
+    function parseTime(cell) {
         if (!cell) return null;
+        // אם זה אובייקט זמן של גוגל (HH:MM:SS)
         if (cell.f) {
             const p = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
             if (p) return parseInt(p[1]) * 3600 + parseInt(p[2]) * 60 + (p[3] ? parseInt(p[3]) : 0);
         }
+        // אם זה טקסט רגיל
+        if (typeof cell.v === 'string') {
+            const p = cell.v.match(/(\d{1,2}):(\d{2})/);
+            if (p) return parseInt(p[1]) * 3600 + parseInt(p[2]) * 60;
+        }
+        // אם זה מספר עשרוני של גוגל
         if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
         return null;
     }
@@ -58,37 +65,41 @@
         if (!data || !data.table) return;
         const rows = data.table.rows;
         
-        // בדיקה ישירה של תא Z1 (עמודה 25)
-        let foundStart = false;
-        let startSecs = null;
+        let foundStartSecs = null;
 
-        // בדיקה אם ב-Z1 (עמודה 25) כתוב START
-        if (rows[0] && rows[0].c[25] && rows[0].c[25].v.toString().toUpperCase().trim() === "START") {
-            foundStart = true;
-            if (rows[1] && rows[1].c[25]) {
-                startSecs = getSeconds(rows[1].c[25]);
+        // סריקה של כל עמודה Z (אינדקס 25) כדי למצוא את המילה START
+        for (let i = 0; i < rows.length; i++) {
+            const cell = rows[i].c && rows[i].c[25] ? rows[i].c[25].v : null;
+            if (cell && cell.toString().toUpperCase().trim() === "START") {
+                // מצאנו START, ניקח את התא שמתחתיו
+                if (rows[i+1] && rows[i+1].c[25]) {
+                    foundStartSecs = parseTime(rows[i+1].c[25]);
+                    break;
+                }
             }
         }
 
         const statusDot = document.getElementById('sync-status');
         const timerText = document.getElementById('display-timer');
 
-        if (foundStart && startSecs !== null) {
-            statusDot.style.background = "#00ffcc"; // ירוק כשיש סנכרון
+        if (foundStartSecs !== null) {
+            statusDot.style.background = "#00ffcc"; // נמצא סנכרון!
             const now = new Date();
             const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            const elapsed = nowSecs - startSecs;
+            
+            // חישוב זמן שחלף (מטפל גם במעבר יום אם צריך)
+            let elapsed = nowSecs - foundStartSecs;
             const remaining = Math.max(0, DURATION - elapsed);
             
             const m = Math.floor(remaining / 60), s = remaining % 60;
             timerText.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
             
-            if (remaining === 0 && lastStartTime !== startSecs) {
+            if (remaining === 0 && lastStartTime !== foundStartSecs) {
                 document.getElementById('beep').play();
-                lastStartTime = startSecs;
+                lastStartTime = foundStartSecs;
             }
         } else {
-            statusDot.style.background = "#ff4444"; // אדום אם לא מצא START ב-Z1
+            statusDot.style.background = "#ff4444"; // לא נמצא START בעמודה Z
             timerText.innerText = "07:00";
         }
 
@@ -128,12 +139,11 @@
 
     function fetchData() {
         const script = document.createElement('script');
-        // gid=0 זה הגיליון הראשון. אם הנתונים בגיליון אחר, צריך לשנות את ה-ID
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
 
-    setInterval(fetchData, 3000); // בדיקה כל 3 שניות
+    setInterval(fetchData, 3000); 
     setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}); }, 1000);
     fetchData();
 </script>
