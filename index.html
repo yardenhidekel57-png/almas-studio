@@ -3,52 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alma Studio - Trainee Cards</title>
+    <title>Alma Studio - תצוגת אימון</title>
     <style>
         * { box-sizing: border-box; }
         body { 
-            margin: 0; padding: 20px; background: #000; color: white; 
+            margin: 0; padding: 20px; background-color: #000; color: #fff; 
             font-family: system-ui, -apple-system, sans-serif; 
         }
         
         /* כותרת עליונה */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; background: #111; border-radius: 15px;
-            border-bottom: 3px solid #00ffcc; margin-bottom: 30px;
+            padding: 15px 25px; background-color: #111; border-radius: 15px;
+            border-bottom: 3px solid #00ffcc; margin-bottom: 25px;
         }
-        .studio-name { font-size: 2.5rem; color: #ffd700; font-weight: 900; }
-        #live-clock { font-size: 2rem; color: #00ffcc; font-weight: bold; }
+        .studio-name { font-size: 2.2rem; color: #ffd700; font-weight: 900; }
+        #live-clock { font-size: 1.8rem; color: #00ffcc; font-weight: bold; }
 
-        /* גריד של כרטיסיות */
+        /* גריד של כרטיסיות המתאמנות */
         .cards-grid { 
-            display: grid; gap: 25px; 
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+            display: grid; gap: 20px; 
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); 
         }
 
-        /* עיצוב כרטיס מתאמנת */
+        /* עיצוב כרטיס מתאמנת ענק וברור */
         .card { 
-            background: #1a1a1a; border-radius: 25px; padding: 25px; 
-            border: 2px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background-color: #1a1a1a; border-radius: 20px; padding: 25px; 
+            border: 2px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.5);
         }
         .trainee-name { 
-            font-size: 3rem; color: #ffd700; text-align: center; 
+            font-size: 2.8rem; color: #ffd700; text-align: center; 
             margin-bottom: 15px; border-bottom: 2px solid #444; padding-bottom: 10px;
+            font-weight: bold;
         }
         .exercise-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            font-size: 1.8rem; padding: 10px 0; border-bottom: 1px solid #222;
+            font-size: 1.7rem; padding: 8px 0; border-bottom: 1px solid #222;
         }
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 10px; }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 8px; }
         .reps { 
             color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; 
-            padding: 4px 12px; border-radius: 10px; 
+            padding: 3px 10px; border-radius: 8px; font-size: 1.5rem;
         }
 
+        /* התאמה למסכים קטנים (אייפון) */
         @media (max-width: 600px) {
             .cards-grid { grid-template-columns: 1fr; }
             .trainee-name { font-size: 2rem; }
-            .exercise-row { font-size: 1.4rem; }
+            .exercise-row { font-size: 1.3rem; }
+            .reps { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -61,12 +64,14 @@
 </div>
 
 <div id="main-grid" class="cards-grid">
-    <div style="text-align:center; width:100%; font-size:2rem; color:#444;">טוען נתונים...</div>
+    <div style="text-align:center; width:100%; font-size:1.8rem; color:#666; grid-column: 1/-1; padding-top: 50px;">טוען נתונים מהגיליון...</div>
 </div>
 
 <script>
+    // ה-ID של הגיליון שלך
     const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
 
+    // פונקציה שמקבלת את הנתונים ומציגה אותם
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
@@ -76,28 +81,28 @@
         const currentMins = now.getHours() * 60 + now.getMinutes();
         
         let foundWorkout = [];
-        let workoutTitle = "";
 
         // סורק את הגיליון למצוא את האימון שמתאים לשעה עכשיו
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             
-            if (firstCell.includes("אימון")) {
+            // מחפש כותרת שמתחילה במילה "אימון"
+            if (firstCell.startsWith("אימון")) {
                 const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
                 if (timeMatch) {
                     const h = parseInt(timeMatch[1]);
                     const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
                     const workoutMins = h * 60 + m;
 
-                    // מציג אימון אם אנחנו בטווח של שעה מהזמן שכתוב
+                    // מציג את האימון אם אנחנו בטווח של שעה ממנו
                     if (currentMins >= workoutMins && currentMins < (workoutMins + 60)) {
-                        workoutTitle = firstCell;
                         let j = i + 1;
-                        // אוסף את כל המתאמנות עד הכותרת "אימון" הבאה
-                        while (j < rows.length && rows[j].c[0] && !rows[j].c[0].v.toString().includes("אימון")) {
+                        // אוסף את המתאמנות עד הכותרת הבאה
+                        while (j < rows.length && rows[j].c[0] && !rows[j].c[0].v.toString().startsWith("אימון")) {
                             foundWorkout.push(rows[j]);
                             j++;
                         }
+                        break; // מצאנו את האימון, אפשר לעצור
                     }
                 }
             }
@@ -107,11 +112,12 @@
             grid.innerHTML = foundWorkout.map(row => {
                 const name = row.c[0].v;
                 let exercisesHtml = '';
-                // עובר על התרגילים (עמודות B, C, D וכו')
+                // עובר על עמודות התרגילים (B, C, D...) בשלשות
                 for (let k = 1; k < row.c.length; k += 3) {
                     const ex = row.c[k] ? row.c[k].v : '';
                     const w = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
                     const r = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
+                    // מציג רק אם יש שם לתרגיל וזה לא "..."
                     if (ex && ex !== "...") {
                         exercisesHtml += `
                             <div class="exercise-row">
@@ -127,23 +133,33 @@
                     </div>`;
             }).join('');
         } else {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding-top:100px; color:#333; font-size:3rem;">אין אימון מתוזמן לשעה הקרובה</div>';
+            // אם לא מצאנו אימון מתאים לשעה הנוכחית
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding-top:100px; color:#444; font-size:2.5rem; font-weight:bold;">אין אימון מתוזמן לשעה זו<br><span style="font-size:1.2rem; color:#222;">(ודאי שכתוב בגיליון למשל "אימון 19:00")</span></div>';
         }
     }
 
+    // פונקציה שמושכת את הנתונים מהגיליון
     function fetchData() {
+        // מסיר סקריפטים קודמים כדי למנוע כפילויות
+        const oldScript = document.getElementById('sheets-script');
+        if (oldScript) oldScript.remove();
+
         const script = document.createElement('script');
+        script.id = 'sheets-script';
+        // מושך את הנתונים וקורא לפונקציה onData
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
 
-    // רענון נתונים כל 10 שניות
-    setInterval(fetchData, 10000);
-    // עדכון שעון
+    // רענון נתונים אוטומטי כל 15 שנייה
+    setInterval(fetchData, 15000);
+    
+    // עדכון השעון העליון כל שנייה
     setInterval(() => {
         document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
     
+    // הפעלה ראשונית
     fetchData();
 </script>
 
