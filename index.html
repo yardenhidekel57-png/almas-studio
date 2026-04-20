@@ -3,25 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Final Solution</title>
+    <title>Alma Studio - Live View</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #111; border-radius: 15px; border-bottom: 3px solid #00ffcc; margin: 10px; flex-shrink: 0; }
+        
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; background-color: #111; border-radius: 15px;
+            border-bottom: 3px solid #00ffcc; margin: 10px; flex-shrink: 0;
+        }
         .studio-name { font-size: 1.8rem; color: #ffd700; font-weight: 900; }
         #live-clock { font-size: 1.5rem; color: #00ffcc; font-weight: bold; }
-        .cards-grid { display: grid; gap: 15px; padding: 10px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); overflow-y: auto; height: calc(100vh - 180px); align-content: start; padding-bottom: 120px; }
-        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; }
+
+        .cards-grid { 
+            display: grid; gap: 15px; padding: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+            overflow-y: auto; height: calc(100vh - 100px); align-content: start;
+        }
+
+        .card { background-color: #161616; border-radius: 20px; padding: 20px; border: 2px solid #282828; margin-bottom: 5px; }
         .trainee-name { font-size: 2.2rem; color: #ffd700; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 8px; font-weight: 900; }
         .exercise-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222; }
         .weight { color: #ff9f43; font-weight: bold; }
         .reps { color: #00ffcc; font-weight: bold; border: 1px solid #00ffcc; padding: 2px 8px; border-radius: 8px; }
-        .timer-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 17, 17, 0.95); padding: 15px; border-top: 3px solid #ff9f43; display: flex; justify-content: space-around; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
-        #display-timer { font-size: 4.5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
-        #sync-status { width: 15px; height: 15px; border-radius: 50%; background: #ff4444; }
+
+        /* הסתרת סקולבר לעיצוב נקי */
+        .cards-grid::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body onclick="document.getElementById('beep').load()">
+<body>
 
 <div class="header">
     <div id="live-clock">00:00</div>
@@ -31,93 +42,52 @@
 
 <div id="main-grid" class="cards-grid"></div>
 
-<div class="timer-panel">
-    <div id="sync-status"></div>
-    <div id="display-timer">07:00</div>
-    <div style="width: 15px;"></div>
-</div>
-
-<audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
 <script>
     const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
-    const DURATION = 7 * 60;
-    let lastStartTime = 0;
-
-    function parseTime(cell) {
-        if (!cell) return null;
-        if (cell.f) {
-            const p = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
-            if (p) return parseInt(p[1]) * 3600 + parseInt(p[2]) * 60 + (p[3] ? parseInt(p[3]) : 0);
-        }
-        if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
-        return null;
-    }
 
     function onData(data) {
         if (!data || !data.table) return;
         const rows = data.table.rows;
-        let foundStartSecs = null;
-
-        // סריקה רק של עמודות A, B, C (הכי בטוח בגוגל)
-        for (let colIdx = 0; colIdx <= 2; colIdx++) {
-            for (let i = 0; i < Math.min(rows.length, 10); i++) { // בודק רק 10 שורות ראשונות
-                const cell = rows[i].c && rows[i].c[colIdx] ? rows[i].c[colIdx].v : null;
-                if (cell && cell.toString().toUpperCase().trim() === "START") {
-                    if (rows[i+1] && rows[i+1].c[colIdx]) {
-                        foundStartSecs = parseTime(rows[i+1].c[colIdx]);
-                        break;
-                    }
-                }
-            }
-            if (foundStartSecs !== null) break;
-        }
-
-        const statusDot = document.getElementById('sync-status');
-        if (foundStartSecs !== null) {
-            statusDot.style.background = "#00ffcc";
-            const now = new Date();
-            const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            const elapsed = nowSecs - foundStartSecs;
-            const remaining = Math.max(0, DURATION - elapsed);
-            const m = Math.floor(remaining / 60), s = remaining % 60;
-            document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            if (remaining === 0 && lastStartTime !== foundStartSecs) {
-                document.getElementById('beep').play();
-                lastStartTime = foundStartSecs;
-            }
-        } else {
-            statusDot.style.background = "#ff4444";
-            document.getElementById('display-timer').innerText = "07:00";
-        }
-        renderCards(rows);
-    }
-
-    function renderCards(rows) {
         const now = new Date();
         const nowMins = now.getHours() * 60 + now.getMinutes();
+
+        // זיהוי האימון הפעיל לפי השעה בגיליון
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
-            const cell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            if (cell.startsWith("אימון")) {
-                const tm = cell.match(/(\d{1,2}):(\d{2})/);
+            const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+            if (firstCell.startsWith("אימון")) {
+                const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
                 if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
             }
         }
+
         let activeW = null;
         for (let w of allWorkouts) { if (nowMins >= w.mins) activeW = w; }
+
         const grid = document.getElementById('main-grid');
         if (activeW) {
-            let html = ""; let j = activeW.index + 1;
+            let html = "";
+            let j = activeW.index + 1;
             while (j < rows.length) {
                 if (!rows[j].c || !rows[j].c[0] || rows[j].c[0].v.toString().includes("אימון")) break;
-                let ex = "";
+                
+                let exHtml = "";
+                // בניית התרגילים של כל מתאמנת
                 for (let k = 1; k < rows[j].c.length; k += 3) {
                     if (rows[j].c[k]?.v && rows[j].c[k].v !== "...") {
-                        ex += `<div class="exercise-row"><div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div><span class="reps">${rows[j].c[k+2]?.v || '-'}</span></div>`;
+                        exHtml += `
+                            <div class="exercise-row">
+                                <div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div>
+                                <span class="reps">${rows[j].c[k+2]?.v || '-'}</span>
+                            </div>`;
                     }
                 }
-                html += `<div class="card"><div class="trainee-name">${rows[j].c[0].v}</div>${ex}</div>`;
+                
+                html += `
+                    <div class="card">
+                        <div class="trainee-name">${rows[j].c[0].v}</div>
+                        ${exHtml}
+                    </div>`;
                 j++;
             }
             grid.innerHTML = html;
@@ -130,9 +100,17 @@
         document.body.appendChild(script);
     }
 
-    setInterval(fetchData, 3000); 
-    setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'}); }, 1000);
+    // עדכון שעון
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+
+    // עדכון נתונים מהגיליון כל 10 שניות
+    setInterval(fetchData, 10000);
+    
     fetchData();
 </script>
+
 </body>
 </html>
