@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Sync Fix</title>
+    <title>Alma Studio - Stable Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -49,24 +49,11 @@
 
     function getSecondsFromCell(cell) {
         if (!cell) return null;
-        
-        // 1. ניסיון לפי פורמט טקסט (13:58:00)
         if (cell.f) {
             const parts = cell.f.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
             if (parts) return parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + (parts[3] ? parseInt(parts[3]) : 0);
         }
-        
-        // 2. ניסיון לפי ערך מספרי (גוגל שומר זמן כשבר של יום)
-        if (typeof cell.v === 'number') {
-            return Math.round(cell.v * 86400);
-        }
-
-        // 3. ניסיון לפי אובייקט תאריך של גוגל
-        if (cell.v && cell.v.toString().includes("Date")) {
-            const d = cell.v.match(/\d+/g);
-            if (d && d.length >= 5) return parseInt(d[3]) * 3600 + parseInt(d[4]) * 60 + (d[5] ? parseInt(d[5]) : 0);
-        }
-        
+        if (typeof cell.v === 'number') return Math.round(cell.v * 86400);
         return null;
     }
 
@@ -76,28 +63,20 @@
         const now = new Date();
         const currentSecondsToday = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
         
-        let syncActive = false;
-        let startSeconds = null;
-
-        // חיפוש START
-        for (let r = 0; r < rows.length; r++) {
-            for (let c = 0; c < rows[r].c.length; c++) {
-                if (rows[r].c[c] && rows[r].c[c].v && rows[r].c[c].v.toString().toUpperCase().trim() === "START") {
-                    syncActive = true;
-                    if (rows[r+1] && rows[r+1].c[c]) {
-                        startSeconds = getSecondsFromCell(rows[r+1].c[c]);
-                    }
-                }
-            }
-        }
+        // הגדרה קשיחה: Z1 ו-Z2 (עמודה 25 בקוד)
+        const syncStateCell = (rows[0] && rows[0].c && rows[0].c[25]) ? rows[0].c[25].v : "";
+        const syncTimeCell = (rows[1] && rows[1].c && rows[1].c[25]) ? rows[1].c[25] : null;
+        
+        const syncActive = (syncStateCell.toString().toUpperCase().trim() === "START");
+        const startSeconds = getSecondsFromCell(syncTimeCell);
 
         document.getElementById('status-dot').style.background = (syncActive && startSeconds !== null) ? "#ff9f43" : "#444";
 
-        // כרטיסיות (נשאר ללא שינוי)
+        // כרטיסיות
         const grid = document.getElementById('main-grid');
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
-            const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+            const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             if (firstCell.startsWith("אימון")) {
                 const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
                 if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
@@ -148,11 +127,11 @@
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
-    setInterval(fetchData, 5000);
+    setInterval(fetchData, 4000); // רענון כל 4 שניות לסנכרון טוב יותר
+    fetchData();
     setInterval(() => {
         document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
-    fetchData();
 </script>
 </body>
 </html>
