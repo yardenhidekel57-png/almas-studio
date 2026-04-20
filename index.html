@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - תצוגה מעודכנת</title>
+    <title>Alma Studio - 2 Min Buffer</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -77,12 +77,12 @@
         const grid = document.getElementById('main-grid');
         
         const now = new Date();
-        const currentMins = now.getHours() * 60 + now.getMinutes();
+        const currentTotalMins = now.getHours() * 60 + now.getMinutes();
         
         let selectedWorkoutIndex = -1;
-        let maxWorkoutMins = -1;
+        let lastFoundMins = -1;
 
-        // עוברים על כל השורות ומוצאים את האימון האחרון שהזמן שלו כבר הגיע
+        // סורק את הגיליון למציאת האימון הרלוונטי ביותר
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
             
@@ -91,18 +91,27 @@
                 if (timeMatch) {
                     const h = parseInt(timeMatch[1]);
                     const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-                    const workoutMins = h * 60 + m;
+                    const workoutTotalMins = h * 60 + m;
 
-                    // אם שעת האימון בגיליון קטנה או שווה לשעה עכשיו, והיא מאוחרת יותר ממה שמצאנו קודם
-                    if (currentMins >= workoutMins && workoutMins > maxWorkoutMins) {
-                        maxWorkoutMins = workoutMins;
+                    // מציג אם השעה כבר הגיעה
+                    if (currentTotalMins >= workoutTotalMins) {
                         selectedWorkoutIndex = i;
+                        lastFoundMins = workoutTotalMins;
                     }
                 }
             }
         }
 
-        // ניקוי המסך לפני הצגת נתונים חדשים
+        // בדיקה: האם האימון שמצאנו הוא האימון האחרון בגיליון?
+        // אם כן, הוא יישאר ל-2 דקות גם אם השעה עברה (במידה והוא האימון האחרון ברשימה)
+        let isLastInSheet = true;
+        for (let k = selectedWorkoutIndex + 1; k < rows.length; k++) {
+            if (rows[k].c[0] && rows[k].c[0].v.toString().trim().startsWith("אימון")) {
+                isLastInSheet = false;
+                break;
+            }
+        }
+
         grid.innerHTML = "";
 
         if (selectedWorkoutIndex !== -1) {
@@ -145,18 +154,13 @@
         if (oldScript) oldScript.remove();
         const script = document.createElement('script');
         script.id = 'sheets-script';
-        // הוספת סימן זמן משתנה כדי למנוע מהדפדפן להשתמש בתוצאה ישנה (Cache Busting)
         script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
         document.body.appendChild(script);
     }
 
-    // רענון כל 5 שניות לתגובה מהירה
     setInterval(fetchData, 5000);
     setInterval(() => {
-        const clockElement = document.getElementById('live-clock');
-        if (clockElement) {
-            clockElement.innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
-        }
+        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
     }, 1000);
     
     fetchData();
