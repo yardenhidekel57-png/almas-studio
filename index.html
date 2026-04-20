@@ -1,43 +1,151 @@
-function renderWorkoutCards(rows) {
-        const grid = document.getElementById('main-grid');
-        let targetRows = [];
-        let activeTitle = "אימון פעיל";
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alma Studio - Trainee Cards</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 20px; background: #000; color: white; 
+            font-family: system-ui, -apple-system, sans-serif; 
+        }
+        
+        /* כותרת עליונה */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; background: #111; border-radius: 15px;
+            border-bottom: 3px solid #00ffcc; margin-bottom: 30px;
+        }
+        .studio-name { font-size: 2.5rem; color: #ffd700; font-weight: 900; }
+        #live-clock { font-size: 2rem; color: #00ffcc; font-weight: bold; }
 
-        // חיפוש האימון האחרון שמופיע בגיליון (בלי קשר לשעה)
+        /* גריד של כרטיסיות */
+        .cards-grid { 
+            display: grid; gap: 25px; 
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+        }
+
+        /* עיצוב כרטיס מתאמנת */
+        .card { 
+            background: #1a1a1a; border-radius: 25px; padding: 25px; 
+            border: 2px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        .trainee-name { 
+            font-size: 3rem; color: #ffd700; text-align: center; 
+            margin-bottom: 15px; border-bottom: 2px solid #444; padding-bottom: 10px;
+        }
+        .exercise-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 1.8rem; padding: 10px 0; border-bottom: 1px solid #222;
+        }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 10px; }
+        .reps { 
+            color: #00ffcc; font-weight: bold; border: 2px solid #00ffcc; 
+            padding: 4px 12px; border-radius: 10px; 
+        }
+
+        @media (max-width: 600px) {
+            .cards-grid { grid-template-columns: 1fr; }
+            .trainee-name { font-size: 2rem; }
+            .exercise-row { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div id="live-clock">00:00</div>
+    <div class="studio-name">ALMA STUDIO</div>
+    <div style="width: 50px;"></div>
+</div>
+
+<div id="main-grid" class="cards-grid">
+    <div style="text-align:center; width:100%; font-size:2rem; color:#444;">טוען נתונים...</div>
+</div>
+
+<script>
+    const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+
+    function onData(data) {
+        if (!data || !data.table) return;
+        const rows = data.table.rows;
+        const grid = document.getElementById('main-grid');
+        
+        const now = new Date();
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        
+        let foundWorkout = [];
+        let workoutTitle = "";
+
+        // סורק את הגיליון למצוא את האימון שמתאים לשעה עכשיו
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+            
             if (firstCell.includes("אימון")) {
-                activeTitle = firstCell;
-                targetRows = []; // מאפס כדי לקחת את האימון הכי עדכני שמצאנו
-                let j = i + 1;
-                while (j < rows.length && rows[j].c[0] && !rows[j].c[0].v.includes("אימון")) {
-                    targetRows.push(rows[j]);
-                    j++;
+                const timeMatch = firstCell.match(/(\d{1,2}):?(\d{2})?/);
+                if (timeMatch) {
+                    const h = parseInt(timeMatch[1]);
+                    const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                    const workoutMins = h * 60 + m;
+
+                    // מציג אימון אם אנחנו בטווח של שעה מהזמן שכתוב
+                    if (currentMins >= workoutMins && currentMins < (workoutMins + 60)) {
+                        workoutTitle = firstCell;
+                        let j = i + 1;
+                        // אוסף את כל המתאמנות עד הכותרת "אימון" הבאה
+                        while (j < rows.length && rows[j].c[0] && !rows[j].c[0].v.toString().includes("אימון")) {
+                            foundWorkout.push(rows[j]);
+                            j++;
+                        }
+                    }
                 }
             }
         }
 
-        if (targetRows.length > 0) {
-            document.getElementById('session-info').innerText = activeTitle;
-            grid.innerHTML = targetRows.map(row => {
+        if (foundWorkout.length > 0) {
+            grid.innerHTML = foundWorkout.map(row => {
                 const name = row.c[0].v;
-                let exerciseHtml = '';
+                let exercisesHtml = '';
+                // עובר על התרגילים (עמודות B, C, D וכו')
                 for (let k = 1; k < row.c.length; k += 3) {
                     const ex = row.c[k] ? row.c[k].v : '';
-                    const weight = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
-                    const reps = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
+                    const w = (row.c[k+1] && row.c[k+1].v) ? row.c[k+1].v : '';
+                    const r = (row.c[k+2] && row.c[k+2].v) ? row.c[k+2].v : '-';
                     if (ex && ex !== "...") {
-                        exerciseHtml += `
+                        exercisesHtml += `
                             <div class="exercise-row">
-                                <div>${ex} <span class="val-w">${weight}</span></div>
-                                <span class="val-r">${reps}</span>
+                                <div>${ex} <span class="weight">${w}</span></div>
+                                <span class="reps">${r}</span>
                             </div>`;
                     }
                 }
-                return `<div class="trainee-card"><div class="trainee-name">${name}</div>${exerciseHtml}</div>`;
+                return `
+                    <div class="card">
+                        <div class="trainee-name">${name}</div>
+                        ${exercisesHtml}
+                    </div>`;
             }).join('');
         } else {
-            document.getElementById('session-info').innerText = "מוכן לאימון";
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding-top:100px;color:#222;font-size:4.5rem;font-weight:900;">ALMA STUDIO</div>';
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding-top:100px; color:#333; font-size:3rem;">אין אימון מתוזמן לשעה הקרובה</div>';
         }
     }
+
+    function fetchData() {
+        const script = document.createElement('script');
+        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
+        document.body.appendChild(script);
+    }
+
+    // רענון נתונים כל 10 שניות
+    setInterval(fetchData, 10000);
+    // עדכון שעון
+    setInterval(() => {
+        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+    
+    fetchData();
+</script>
+
+</body>
+</html>
