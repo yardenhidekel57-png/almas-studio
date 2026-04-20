@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma Studio - Sync Timer Fix</title>
+    <title>Alma Studio - Sync Timer Final</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; padding: 0; background-color: #000; overflow: hidden; }
@@ -38,9 +38,12 @@
         #display-timer { font-size: 5rem; font-weight: 900; color: #ff9f43; font-variant-numeric: tabular-nums; }
         .sync-label { color: #555; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
         .no-workout { grid-column: 1/-1; text-align: center; margin-top: 100px; font-size: 5rem; color: #222; font-weight: 900; }
+        #debug-info { position: fixed; top: 0; left: 0; font-size: 10px; color: #333; }
     </style>
 </head>
 <body onclick="document.getElementById('beep').load()">
+
+<div id="debug-info"></div>
 
 <div class="header">
     <div id="live-clock">00:00</div>
@@ -70,7 +73,7 @@
         const now = new Date();
         const currentTotalMins = (now.getHours() * 60) + now.getMinutes();
         
-        // לוגיקת כרטיסיות
+        // --- לוגיקת כרטיסיות ---
         let allWorkouts = [];
         for (let i = 0; i < rows.length; i++) {
             const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
@@ -96,7 +99,8 @@
                 let html = "";
                 while (j < rows.length) {
                     const row = rows[j];
-                    const cellVal = row.c[0] ? row.c[0].v.toString().trim() : "";
+                    if (!row || !row.c || !row.c[0]) break;
+                    const cellVal = row.c[0].v.toString().trim();
                     if (cellVal.startsWith("אימון")) break;
                     if (cellVal !== "") {
                         let exHtml = "";
@@ -114,23 +118,37 @@
             }
         } else { grid.innerHTML = '<div class="no-workout">ALMA STUDIO</div>'; }
 
-        // לוגיקת טיימר
-        const syncState = rows[0].c[25] ? rows[0].c[25].v.toString().toUpperCase() : "STOP";
-        const syncTimeStr = rows[1].c[25] ? rows[1].c[25].v.toString() : null;
+        // --- לוגיקת טיימר משופרת ---
+        const syncStateRaw = rows[0].c[25] ? rows[0].c[25].v : "STOP";
+        const syncState = syncStateRaw.toString().toUpperCase().trim();
+        
+        // שליפת השעה מתא Z2 (עמודה 25)
+        let syncTimeStr = "";
+        if (rows[1] && rows[1].c[25]) {
+            // טיפול בפורמט "Date" שגוגל לפעמים שולח
+            syncTimeStr = rows[1].c[25].f ? rows[1].c[25].f : rows[1].c[25].v.toString();
+        }
 
         if (syncState === "START" && syncTimeStr) {
-            const t = syncTimeStr.split(':');
-            const startTime = new Date();
-            startTime.setHours(parseInt(t[0]), parseInt(t[1]), t[2] ? parseInt(t[2]) : 0);
-            const elapsed = Math.floor((new Date() - startTime) / 1000);
-            const remaining = Math.max(0, TIMER_DURATION - elapsed);
-            
-            const m = Math.floor(remaining / 60);
-            const s = remaining % 60;
-            document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            
-            if (remaining === 0 && lastState === "START") document.getElementById('beep').play();
-            lastState = "START";
+            const t = syncTimeStr.match(/(\d{1,2}):(\d{2}):?(\d{2})?/);
+            if (t) {
+                const startTime = new Date();
+                startTime.setHours(parseInt(t[1]), parseInt(t[2]), t[3] ? parseInt(t[3]) : 0);
+                
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                const remaining = Math.max(0, TIMER_DURATION - elapsed);
+                
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                document.getElementById('display-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                
+                if (remaining === 0 && lastState === "START") {
+                    document.getElementById('beep').play();
+                    lastState = "DONE";
+                } else if (remaining > 0) {
+                    lastState = "START";
+                }
+            }
         } else {
             document.getElementById('display-timer').innerText = "07:00";
             lastState = "STOP";
