@@ -6,63 +6,64 @@
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-        body {
+        html, body {
+            margin: 0; padding: 0;
+            height: 100vh; width: 100vw;
+            overflow: hidden; /* מונע גלילה לגמרי */
             background-color: #000;
             color: #fff;
             font-family: 'Assistant', sans-serif;
-            margin: 0;
-            padding: 20px;
-            padding-top: 80px; /* המרווח שביקשת מהפס העליון */
+        }
+        body {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden; /* מונע גלילה במחשב ובטלוויזיה */
+            padding-top: 5vh; /* מרווח גמיש מלמעלה */
         }
         h1 {
             font-size: 3rem;
+            margin: 0 0 2vh 0;
+            text-align: center;
             font-weight: 800;
-            margin-bottom: 30px;
-            letter-spacing: 2px;
         }
         #workout-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 כרטיסיות בשורה */
-            grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
-            gap: 20px;
-            width: 95%;
-            max-width: 1600px;
-            height: calc(100vh - 200px);
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            padding: 0 20px 20px 20px;
+            flex-grow: 1; /* לוקח את כל המקום שנשאר */
         }
         .card {
             background: #111;
-            border: 2px solid #333;
-            border-radius: 15px;
-            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            min-height: 0; /* קריטי למניעת מתיחה */
         }
         .trainee-name {
             font-size: 1.8rem;
             font-weight: 700;
-            border-bottom: 2px solid #444;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
             text-align: center;
+            color: #fff;
         }
         .exercise-list {
             list-style: none;
-            padding: 0;
-            margin: 0;
+            padding: 0; margin: 0;
             text-align: right;
-            font-size: 1.4rem;
-            line-height: 1.4;
+            overflow-y: auto; /* אם עדיין יש יותר מדי טקסט, תהיה גלילה פנימית קטנה בתוך הכרטיסייה */
+            flex-grow: 1;
         }
         .exercise-item {
-            margin-bottom: 8px;
+            font-size: 1.1rem; /* טקסט מעט קטן יותר כדי שייכנס הכל */
+            margin-bottom: 4px;
+            padding-right: 15px;
             position: relative;
-            padding-right: 20px;
+            line-height: 1.2;
         }
         .exercise-item::before {
             content: "•";
@@ -85,38 +86,34 @@
             try {
                 const res = await fetch(base);
                 const text = await res.text();
-                // הניקוי של גוגל
                 const jsonData = JSON.parse(text.substr(47).slice(0, -2));
                 const grid = document.getElementById('workout-grid');
                 grid.innerHTML = '';
 
-                // מושך את 6 השורות הראשונות
                 jsonData.table.rows.slice(0, 6).forEach((row) => {
-                    const name = row.c[0] ? row.c[0].v : 'מתאמנת';
+                    const name = row.c[0] ? row.c[0].v : 'אימון';
                     const card = document.createElement('div');
                     card.className = 'card';
                     
                     let exercisesHtml = '';
                     for (let i = 1; i < row.c.length; i++) {
                         if (row.c[i] && row.c[i].v) {
-                            exercisesHtml += `<div class="exercise-item">${row.c[i].v}</div>`;
+                            // מנקה פורמטים מוזרים של תאריכים אם יש
+                            let val = row.c[i].v;
+                            if (typeof val === 'string' && val.includes('Date')) val = '';
+                            if (val) exercisesHtml += `<div class="exercise-item">${val}</div>`;
                         }
                     }
 
-                    card.innerHTML = `
-                        <div class="trainee-name">${name}</div>
-                        <div class="exercise-list">${exercisesHtml}</div>
-                    `;
+                    card.innerHTML = `<div class="trainee-name">${name}</div><div class="exercise-list">${exercisesHtml}</div>`;
                     grid.appendChild(card);
                 });
             } catch (e) {
                 console.error(e);
-                document.getElementById('workout-grid').innerText = "שגיאה בחיבור לגיליון. וודאי שהוא ציבורי (Anyone with the link can view).";
             }
         }
-
         fetchData();
-        setInterval(fetchData, 60000); // עדכון אוטומטי כל דקה
+        setInterval(fetchData, 60000);
     </script>
 </body>
 </html>
