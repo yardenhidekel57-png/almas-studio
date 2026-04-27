@@ -3,152 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALMA'S STUDIO - Plasma View</title>
+    <title>Alma's Studio - Guaranteed Visibility</title>
     <style>
         * { box-sizing: border-box; }
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
         
-        .header {
-            display: flex; justify-content: center; align-items: center;
-            padding: 20px; background-color: #000; 
-            border-bottom: 5px solid #00ffcc; height: 12vh;
-            position: relative;
+        html, body { 
+            height: 100vh; margin: 0; overflow: hidden; 
+            background-color: #050505; color: white;
+            font-family: system-ui, -apple-system, sans-serif;
         }
-        .studio-name { font-size: 6vh; color: #ffd700; font-weight: 900; letter-spacing: 3px; }
-        #live-clock { position: absolute; left: 40px; font-size: 4vh; color: #00ffcc; font-weight: bold; }
 
-        .cards-grid { 
-            display: grid; 
-            gap: 30px; 
-            padding: 30px;
-            /* 2 כרטיסיות בשורה למסך 50 אינץ' */
-            grid-template-columns: repeat(2, 1fr); 
-            overflow-y: auto; 
-            height: 88vh; 
-            align-content: start;
+        body { display: flex; flex-direction: column; padding: 10px; }
+
+        /* צמצום קל של הכותרת כדי להרוויח מקום לכרטיסיות */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #111; padding: 0 30px; border-radius: 15px; 
+            border-bottom: 4px solid #00ffcc; height: 9vh; margin-bottom: 8px;
+            flex-shrink: 0; position: relative;
+        }
+
+        .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
+        .logo-main { font-size: 2.5rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; }
+        .logo-sub { font-size: 0.8rem; color: #00ffcc; letter-spacing: 5px; text-transform: uppercase; display: block; margin-top: -5px; }
+
+        #main-grid { 
+            display: grid; gap: 12px; flex-grow: 1; height: 89vh; width: 100%;
+            grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
+            grid-auto-rows: 1fr; 
         }
 
         .card { 
-            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
-            border-radius: 40px; 
-            padding: 4vh; 
-            border: 3px solid #333; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            background: #161616; border: 2px solid #333; border-radius: 20px; 
+            padding: 15px; display: flex; flex-direction: column;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            min-height: 0; 
         }
 
-        .trainee-name { 
-            font-size: 7vh; /* שם ענק */
-            color: #ffd700; 
-            text-align: center; 
-            margin-bottom: 2.5vh; 
-            border-bottom: 4px solid #ffd700; 
-            padding-bottom: 1.5vh; 
-            font-weight: 900; 
+        .name { 
+            font-size: clamp(1.4rem, 4vh, 2.5rem); color: #ffd700; 
+            text-align: center; border-bottom: 2px solid #444; 
+            margin-bottom: 5px; padding-bottom: 3px; font-weight: 900;
+            flex-shrink: 0;
         }
 
-        .exercise-row { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 4.5vh; /* תרגילים ברורים מרחוק */
-            padding: 2vh 0; 
-            border-bottom: 1px solid #222; 
+        .ex-list {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly; /* מפזר תרגילים לאורך כל הגובה הזמין */
+            overflow: hidden;
         }
 
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 15px; font-size: 4.8vh; }
+        /* פונט גמיש - מתכווץ אם יש הרבה שורות */
+        .ex-row { 
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: clamp(0.9rem, 2.1vh, 1.8rem); 
+            padding: 2px 0; 
+            border-bottom: 1px solid #222;
+            flex-shrink: 1; /* מאפשר לשורה להתכווץ מעט בגובה */
+        }
+
+        .ex-info { display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; }
+
+        .weight {
+            color: #ff9f43; font-weight: bold; background: rgba(255, 159, 67, 0.1);
+            padding: 1px 8px; border-radius: 6px; font-size: 0.85em;
+        }
+
         .reps { 
-            color: #00ffcc; 
-            font-weight: 900; 
-            border: 3px solid #00ffcc; 
-            padding: 8px 25px; 
-            border-radius: 20px; 
-            background: rgba(0, 255, 204, 0.1);
+            color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); 
+            padding: 1px 12px; border-radius: 8px; flex-shrink: 0;
         }
 
-        /* התאמה לאייפון במידה ותפתחי משם */
-        @media (max-width: 1024px) {
-            .cards-grid { grid-template-columns: 1fr; }
-            .studio-name { font-size: 4vh; }
-            .trainee-name { font-size: 5vh; }
-            .exercise-row { font-size: 3vh; }
-        }
-
-        .cards-grid::-webkit-scrollbar { display: none; }
+        #session-label { position: absolute; bottom: 10px; right: 20px; color: #ffd700; font-size: 1.1rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div id="live-clock">00:00</div>
-    <div class="studio-name">ALMA'S STUDIO</div>
-</div>
+    <div class="header">
+        <div id="date" style="font-size: 1.3rem;">--/--</div>
+        <div class="studio-logo">
+            <span class="logo-main">Alma's</span>
+            <span class="logo-sub">STUDIO</span>
+        </div>
+        <div id="time" style="font-size: 2.2rem; color: #00ffcc; font-weight: bold;">00:00:00</div>
+    </div>
 
-<div id="main-grid" class="cards-grid"></div>
+    <div id="main-grid"></div>
+    <div id="session-label">טוען...</div>
 
-<script>
-    const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+    <script>
+        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
 
-    function onData(data) {
-        if (!data || !data.table) return;
-        const rows = data.table.rows;
-        const now = new Date();
-        const nowMins = now.getHours() * 60 + now.getMinutes();
+        function googleDocCallback(data) {
+            if (!data || !data.table) return;
+            const rows = data.table.rows;
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = '';
 
-        let allWorkouts = [];
-        for (let i = 0; i < rows.length; i++) {
-            const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            if (firstCell.startsWith("אימון")) {
-                const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
-                if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
-            }
-        }
+            const now = new Date();
+            const currentTimeValue = now.getHours() * 100 + now.getMinutes();
 
-        let activeW = null;
-        for (let w of allWorkouts) { if (nowMins >= w.mins) activeW = w; }
+            let targetSessionRows = [];
+            let currentScanningSession = "";
 
-        const grid = document.getElementById('main-grid');
-        if (activeW) {
-            let html = "";
-            let j = activeW.index + 1;
-            while (j < rows.length) {
-                if (!rows[j].c || !rows[j].c[0] || rows[j].c[0].v.toString().includes("אימון")) break;
-                
-                let exHtml = "";
-                for (let k = 1; k < rows[j].c.length; k += 3) {
-                    if (rows[j].c[k]?.v && rows[j].c[k].v !== "...") {
-                        exHtml += `
-                            <div class="exercise-row">
-                                <div>${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div>
-                                <span class="reps">${rows[j].c[k+2]?.v || '-'}</span>
-                            </div>`;
-                    }
+            for (let i = 0; i < rows.length; i++) {
+                const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+                if (firstCell.includes("אימון")) {
+                    const sessionTimeNum = parseInt(firstCell.replace(/[^0-9]/g, ""));
+                    if (currentTimeValue >= (sessionTimeNum - 30) && currentTimeValue < (sessionTimeNum + 60)) {
+                        currentScanningSession = firstCell;
+                        targetSessionRows = []; 
+                    } else { currentScanningSession = ""; }
+                    continue; 
                 }
-                
-                html += `
-                    <div class="card">
-                        <div class="trainee-name">${rows[j].c[0].v}</div>
-                        ${exHtml}
-                    </div>`;
-                j++;
+                if (currentScanningSession !== "" && firstCell !== "" && isNaN(firstCell)) {
+                    targetSessionRows.push(rows[i]);
+                }
             }
-            grid.innerHTML = html;
+
+            document.getElementById('session-label').innerText = currentScanningSession || "אין אימון קרוב";
+
+            if (targetSessionRows.length > 0) {
+                const count = targetSessionRows.length;
+                let cols = count <= 3 ? count : 3;
+                if (count > 6) cols = 4;
+                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+                targetSessionRows.forEach(row => {
+                    const name = row.c[0].v;
+                    let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
+                    let exCount = 0;
+                    for (let j = 1; j < row.c.length; j += 3) {
+                        const ex = row.c[j] ? row.c[j].v : '';
+                        const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
+                        const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
+                        if (ex && ex !== "" && ex !== "...") {
+                            html += `<div class="ex-row"><div class="ex-info"><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
+                            exCount++;
+                        }
+                    }
+                    html += `</div></div>`;
+                    grid.innerHTML += html;
+                });
+            }
         }
-    }
 
-    function fetchData() {
-        const script = document.createElement('script');
-        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
-        document.body.appendChild(script);
-    }
+        function refresh() {
+            const s = document.createElement('script');
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:googleDocCallback&gid=0&tcb=${Date.now()}`;
+            document.body.appendChild(s);
+        }
 
-    setInterval(() => {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
-    }, 1000);
+        function clock() {
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL');
+            document.getElementById('date').innerText = new Date().toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
+        }
 
-    setInterval(fetchData, 10000);
-    fetchData();
-</script>
-
+        setInterval(refresh, 5000);
+        setInterval(clock, 1000);
+        refresh(); clock();
+    </script>
 </body>
 </html>
