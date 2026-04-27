@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALMA'S STUDIO - LIVE</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
@@ -13,7 +13,7 @@
             padding: 0;
             height: 100vh;
             width: 100vw;
-            overflow: hidden; /* ביטול גלילה מוחלט */
+            overflow: hidden; /* מבטל גלילה */
             background-color: #000;
             color: #fff;
             font-family: 'Assistant', sans-serif;
@@ -23,46 +23,45 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* מרווח ביטחון כדי שהפס של הדפדפן בטלוויזיה לא יסתיר את הכותרת */
-            padding-top: 80px; 
+            /* מרווח עליון לבריחה מהפס של הדפדפן */
+            padding-top: 85px; 
         }
 
         h1 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: 3.5rem;
             font-weight: 800;
             margin: 0 0 20px 0;
-            letter-spacing: 3px;
-            text-shadow: 0 0 15px rgba(255,255,255,0.2);
+            letter-spacing: 2px;
         }
 
         #workout-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr); /* 3 עמודות */
             grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
-            gap: 15px;
+            gap: 20px;
             width: 96%;
-            height: calc(100vh - 180px); /* מתאים את הגובה למסך בלי גלילה */
+            height: calc(100vh - 180px); /* גובה מותאם למסך */
             padding-bottom: 20px;
         }
 
         .card {
             background: #111;
             border: 1px solid #333;
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
         .trainee-name {
-            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-size: 2.2rem;
             font-weight: 700;
-            color: #fff;
             border-bottom: 1px solid #444;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             text-align: center;
+            color: #fff;
         }
 
         .exercise-list {
@@ -70,13 +69,13 @@
             padding: 0;
             margin: 0;
             text-align: right;
-            overflow-y: hidden;
+            overflow: hidden;
         }
 
         .exercise-item {
-            font-size: clamp(1rem, 2vw, 1.4rem);
-            margin-bottom: 8px;
-            padding-right: 18px;
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            padding-right: 25px;
             position: relative;
             white-space: nowrap;
             overflow: hidden;
@@ -87,13 +86,12 @@
             content: "•";
             position: absolute;
             right: 0;
-            color: #666;
+            color: #777;
         }
 
-        /* הודעת טעינה */
         #loading {
             font-size: 24px;
-            margin-top: 50px;
+            margin-top: 100px;
         }
     </style>
 </head>
@@ -104,7 +102,7 @@
     <div id="workout-grid" style="display: none;"></div>
 
     <script>
-        // ה-ID של הגיליון שלך כבר מעודכן כאן
+        // ה-ID של הגיליון שלך
         const sheetId = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
         const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
@@ -112,12 +110,12 @@
             try {
                 const res = await fetch(base);
                 const text = await res.text();
-                // חיתוך הטקסט המיותר שגוגל מחזירה
+                // ניקוי התגובה של גוגל
                 const jsonData = JSON.parse(text.substr(47).slice(0, -2));
                 renderGrid(jsonData.table.rows);
             } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById('loading').innerText = "שגיאה בטעינת הנתונים. וודאי שהגיליון ציבורי.";
+                console.error("Error:", error);
+                document.getElementById('loading').innerText = "שגיאה בטעינה. וודאי שהגיליון ציבורי.";
             }
         }
 
@@ -126,7 +124,7 @@
             const loading = document.getElementById('loading');
             grid.innerHTML = '';
 
-            // לוקח רק את 6 השורות הראשונות
+            // לוקח את 6 השורות הראשונות בלבד
             rows.slice(0, 6).forEach((row) => {
                 const name = row.c[0] ? row.c[0].v : 'מתאמנת';
                 
@@ -134,7 +132,7 @@
                 card.className = 'card';
                 
                 let exercisesHtml = '';
-                // עובר על כל התאים מהשני והלאה (התרגילים)
+                // עובר על התרגילים (מתא עמודה 2 ואילך)
                 for (let i = 1; i < row.c.length; i++) {
                     if (row.c[i] && row.c[i].v) {
                         exercisesHtml += `<li class="exercise-item">${row.c[i].v}</li>`;
@@ -152,7 +150,7 @@
             grid.style.display = 'grid';
         }
 
-        // טעינה ראשונית ועדכון אוטומטי כל דקה
+        // הפעלה ראשונית ועדכון כל דקה
         fetchData();
         setInterval(fetchData, 60000);
     </script>
