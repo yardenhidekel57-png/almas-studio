@@ -23,8 +23,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* מרווח עליון לבריחה מהפס של הדפדפן */
-            padding-top: 85px; 
+            /* מרווח עליון לבריחה מהפס של הדפדפן בטלוויזיה */
+            padding-top: 90px; 
         }
 
         h1 {
@@ -32,6 +32,7 @@
             font-weight: 800;
             margin: 0 0 20px 0;
             letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255,255,255,0.2);
         }
 
         #workout-grid {
@@ -40,7 +41,7 @@
             grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
             gap: 20px;
             width: 96%;
-            height: calc(100vh - 180px); /* גובה מותאם למסך */
+            height: calc(100vh - 180px); /* התאמה מושלמת למסך ללא גלילה */
             padding-bottom: 20px;
         }
 
@@ -48,18 +49,18 @@
             background: #111;
             border: 1px solid #333;
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
         .trainee-name {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             border-bottom: 1px solid #444;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             text-align: center;
             color: #fff;
         }
@@ -69,17 +70,15 @@
             padding: 0;
             margin: 0;
             text-align: right;
-            overflow: hidden;
+            overflow-y: auto; /* מאפשר גלילה פנימית רק בתוך כרטיסייה אם יש המון תרגילים */
         }
 
         .exercise-item {
-            font-size: 1.6rem;
-            margin-bottom: 12px;
-            padding-right: 25px;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            padding-right: 20px;
             position: relative;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.2;
         }
 
         .exercise-item::before {
@@ -98,11 +97,11 @@
 <body>
 
     <h1>ALMA'S STUDIO</h1>
-    <div id="loading">טוען נתונים מהגיליון...</div>
+    <div id="loading">מתחבר לנתונים של עלמה...</div>
     <div id="workout-grid" style="display: none;"></div>
 
     <script>
-        // ה-ID של הגיליון שלך
+        // ה-ID של הגיליון שלך מעודכן כאן
         const sheetId = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
         const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
@@ -110,12 +109,12 @@
             try {
                 const res = await fetch(base);
                 const text = await res.text();
-                // ניקוי התגובה של גוגל
+                // ניקוי המעטפת של גוגל לקבלת JSON נקי
                 const jsonData = JSON.parse(text.substr(47).slice(0, -2));
                 renderGrid(jsonData.table.rows);
             } catch (error) {
                 console.error("Error:", error);
-                document.getElementById('loading').innerText = "שגיאה בטעינה. וודאי שהגיליון ציבורי.";
+                document.getElementById('loading').innerText = "שגיאה בטעינת הנתונים. וודאי שהגיליון ציבורי.";
             }
         }
 
@@ -124,7 +123,7 @@
             const loading = document.getElementById('loading');
             grid.innerHTML = '';
 
-            // לוקח את 6 השורות הראשונות בלבד
+            // מציג את 6 המתאמנות הראשונות (שורות)
             rows.slice(0, 6).forEach((row) => {
                 const name = row.c[0] ? row.c[0].v : 'מתאמנת';
                 
@@ -132,9 +131,9 @@
                 card.className = 'card';
                 
                 let exercisesHtml = '';
-                // עובר על התרגילים (מתא עמודה 2 ואילך)
+                // עובר על התרגילים (עמודות 2 והלאה)
                 for (let i = 1; i < row.c.length; i++) {
-                    if (row.c[i] && row.c[i].v) {
+                    if (row.c[i] && row.c[i].v !== null) {
                         exercisesHtml += `<li class="exercise-item">${row.c[i].v}</li>`;
                     }
                 }
@@ -150,7 +149,7 @@
             grid.style.display = 'grid';
         }
 
-        // הפעלה ראשונית ועדכון כל דקה
+        // טעינה ועדכון אוטומטי כל דקה
         fetchData();
         setInterval(fetchData, 60000);
     </script>
