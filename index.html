@@ -2,92 +2,60 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ALMA'S STUDIO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
-        
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; /* מבטל גלילה לצדדים ולמטה */
+        body {
             background-color: #000;
             color: #fff;
-            font-family: 'Assistant', sans-serif;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            /* מרווח מלמעלה כדי לברוח מהפס של הדפדפן */
-            padding-top: 80px; 
+            font-family: sans-serif;
+            margin: 0;
+            padding-top: 100px; /* המרווח מהפס של הדפדפן */
+            text-align: center;
         }
 
         h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin: 0 0 15px 0;
-            text-transform: uppercase;
+            font-size: 60px;
+            margin: 0 0 30px 0;
         }
 
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 עמודות */
-            grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
-            gap: 15px;
-            width: 98%;
-            /* מחשב את הגובה שנשאר למסך כדי שלא תהיה גלילה */
-            height: calc(100vh - 180px); 
-            padding-bottom: 20px;
+        .container {
+            display: table;
+            width: 95%;
+            margin: 0 auto;
+            border-spacing: 20px;
+        }
+
+        .row {
+            display: table-row;
         }
 
         .card {
+            display: table-cell;
             background: #111;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* מונע מהטקסט "לפוצץ" את הכרטיסייה */
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            width: 33%;
+            vertical-align: top;
+            text-align: right;
         }
 
-        .trainee-name {
-            font-size: 1.8rem;
-            font-weight: 700;
-            border-bottom: 1px solid #444;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
+        .name {
+            font-size: 35px;
+            font-weight: bold;
+            border-bottom: 2px solid #444;
+            margin-bottom: 15px;
             text-align: center;
-            color: #fff;
         }
 
-        .exercise-list {
+        .list {
+            font-size: 25px;
             list-style: none;
             padding: 0;
-            margin: 0;
-            text-align: right;
-            flex-grow: 1;
         }
 
-        .exercise-item {
-            font-size: 1.4rem;
-            margin-bottom: 8px;
-            padding-right: 20px;
-            position: relative;
-            white-space: nowrap; /* מונע מהשורה לרדת למטה */
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .exercise-item::before {
-            content: "•";
-            position: absolute;
-            right: 0;
-            color: #666;
+        .item {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -95,14 +63,54 @@
 
     <h1>ALMA'S STUDIO</h1>
 
-    <div class="grid-container">
-        <div class="card"><div class="trainee-name">מתאמנת 1</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
-        <div class="card"><div class="trainee-name">מתאמנת 2</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
-        <div class="card"><div class="trainee-name">מתאמנת 3</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
-        
-        <div class="card"><div class="trainee-name">מתאמנת 4</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
-        <div class="card"><div class="trainee-name">מתאמנת 5</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
-        <div class="card"><div class="trainee-name">מתאמנת 6</div><ul class="exercise-list"><li class="exercise-item">תרגיל 1</li><li class="exercise-item">תרגיל 2</li></ul></div>
+    <div class="container">
+        <div class="row">
+            <div class="card">
+                <div class="name">מתאמנת 1</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="name">מתאמנת 2</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="name">מתאמנת 3</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="card">
+                <div class="name">מתאמנת 4</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="name">מתאמנת 5</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="name">מתאמנת 6</div>
+                <div class="list">
+                    <div class="item">• תרגיל ראשון</div>
+                    <div class="item">• תרגיל שני</div>
+                </div>
+            </div>
+        </div>
     </div>
 
 </body>
