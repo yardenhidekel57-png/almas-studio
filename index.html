@@ -2,164 +2,149 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ALMA'S STUDIO - Live View</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALMA'S STUDIO - Workout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        /* עיצוב כללי */
-        * { box-sizing: border-box; }
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #000; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        
-        /* כותרת מעוצבת */
-        .header {
-            display: flex; justify-content: center; align-items: center;
-            padding: 15px; background-color: #000; 
-            border-bottom: 4px solid #00ffcc; margin-bottom: 10px;
-            height: 10vh; position: relative;
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Assistant', sans-serif;
+            margin: 0;
+            /* מרווח ביטחון כדי שהפס של הדפדפן בטלוויזיה לא יסתיר את התוכן */
+            padding-top: 80px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .studio-name { font-size: 5vh; color: #ffd700; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 10px rgba(255, 215, 0, 0.3); }
-        #live-clock { position: absolute; right: 30px; font-size: 3vh; color: #00ffcc; font-weight: bold; }
 
-        /* גריד כרטיסיות חכם - מתפרס על כל המסך */
-        .cards-grid { 
-            display: grid; 
-            gap: 25px; 
+        h1 {
+            font-size: 5rem;
+            font-weight: 800;
+            letter-spacing: 5px;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .grid-container {
+            display: grid;
+            /* הגדרה של 3 עמודות שוות */
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            width: 95%;
+            max-width: 1400px;
             padding: 20px;
-            /* בלפטופ זה יציג 2 או 3 כרטיסיות בשורה, באייפון 1 */
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
-            overflow-y: auto; 
-            height: 88vh; 
-            align-content: start;
         }
 
-        /* עיצוב כרטיסייה יוקרתי */
-        .card { 
-            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
-            border-radius: 30px; 
-            padding: 3vh; 
-            border: 2px solid #333; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+        .card {
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
             transition: transform 0.3s ease;
         }
 
-        .trainee-name { 
-            font-size: 5vh; 
-            color: #ffd700; 
-            text-align: center; 
-            margin-bottom: 2vh; 
-            border-bottom: 3px solid #ffd700; 
-            padding-bottom: 1.5vh; 
-            font-weight: 900; 
+        .trainee-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #fff;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
         }
 
-        .exercise-row { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 3vh; 
-            padding: 1.5vh 0; 
-            border-bottom: 1px solid #222; 
+        .exercise-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: right;
         }
 
-        .exercise-name { flex: 1; color: #ffffff; }
-        .weight { color: #ff9f43; font-weight: bold; margin: 0 15px; font-size: 3.2vh; }
-        .reps { 
-            color: #00ffcc; 
-            font-weight: 900; 
-            border: 2px solid #00ffcc; 
-            padding: 5px 20px; 
-            border-radius: 15px; 
-            background: rgba(0, 255, 204, 0.05);
-            min-width: 80px;
-            text-align: center;
+        .exercise-item {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            padding-right: 20px;
+            position: relative;
         }
 
-        /* התאמה לאייפון */
-        @media (max-width: 768px) {
-            .cards-grid { grid-template-columns: 1fr; padding: 10px; gap: 15px; }
-            .studio-name { font-size: 3.5vh; }
-            #live-clock { position: static; margin-left: 20px; font-size: 2.5vh; }
-            .header { justify-content: space-between; }
-            .trainee-name { font-size: 4vh; }
-            .exercise-row { font-size: 2.5vh; }
+        .exercise-item::before {
+            content: "•";
+            position: absolute;
+            right: 0;
+            color: #555;
         }
 
-        .cards-grid::-webkit-scrollbar { width: 8px; }
-        .cards-grid::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        /* התאמה למסכים קטנים יותר אם צריך, אבל ב-50 אינץ' זה ייראה מעולה */
+        @media (max-width: 1000px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="studio-name">ALMA'S STUDIO</div>
-    <div id="live-clock">00:00</div>
-</div>
+    <h1>ALMA'S STUDIO</h1>
 
-<div id="main-grid" class="cards-grid"></div>
+    <div class="grid-container">
+        <div class="card">
+            <div class="trainee-name">מתאמנת 1</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
 
-<script>
-    const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        <div class="card">
+            <div class="trainee-name">מתאמנת 2</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
 
-    function onData(data) {
-        if (!data || !data.table) return;
-        const rows = data.table.rows;
-        const now = new Date();
-        const nowMins = now.getHours() * 60 + now.getMinutes();
+        <div class="card">
+            <div class="trainee-name">מתאמנת 3</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
 
-        let allWorkouts = [];
-        for (let i = 0; i < rows.length; i++) {
-            const firstCell = rows[i].c && rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-            if (firstCell.startsWith("אימון")) {
-                const tm = firstCell.match(/(\d{1,2}):(\d{2})/);
-                if (tm) allWorkouts.push({ index: i, mins: parseInt(tm[1]) * 60 + parseInt(tm[2]) });
-            }
-        }
+        <div class="card">
+            <div class="trainee-name">מתאמנת 4</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
 
-        let activeW = null;
-        for (let w of allWorkouts) { if (nowMins >= w.mins) activeW = w; }
+        <div class="card">
+            <div class="trainee-name">מתאמנת 5</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
 
-        const grid = document.getElementById('main-grid');
-        if (activeW) {
-            let html = "";
-            let j = activeW.index + 1;
-            while (j < rows.length) {
-                if (!rows[j].c || !rows[j].c[0] || rows[j].c[0].v.toString().includes("אימון")) break;
-                
-                let exHtml = "";
-                for (let k = 1; k < rows[j].c.length; k += 3) {
-                    if (rows[j].c[k]?.v && rows[j].c[k].v !== "...") {
-                        exHtml += `
-                            <div class="exercise-row">
-                                <div class="exercise-name">${rows[j].c[k].v} <span class="weight">${rows[j].c[k+1]?.v || ''}</span></div>
-                                <span class="reps">${rows[j].c[k+2]?.v || '-'}</span>
-                            </div>`;
-                    }
-                }
-                
-                html += `
-                    <div class="card">
-                        <div class="trainee-name">${rows[j].c[0].v}</div>
-                        ${exHtml}
-                    </div>`;
-                j++;
-            }
-            grid.innerHTML = html;
-        }
-    }
-
-    function fetchData() {
-        const script = document.createElement('script');
-        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:onData&gid=0&tcb=${Date.now()}`;
-        document.body.appendChild(script);
-    }
-
-    setInterval(() => {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
-    }, 1000);
-
-    setInterval(fetchData, 10000);
-    fetchData();
-</script>
+        <div class="card">
+            <div class="trainee-name">מתאמנת 6</div>
+            <ul class="exercise-list">
+                <li class="exercise-item">תרגיל ראשון</li>
+                <li class="exercise-item">תרגיל שני</li>
+                <li class="exercise-item">תרגיל שלישי</li>
+            </ul>
+        </div>
+    </div>
 
 </body>
 </html>
