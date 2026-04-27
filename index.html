@@ -2,106 +2,82 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALMA'S STUDIO - LIVE</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-        
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; /* מבטל גלילה */
+        body {
             background-color: #000;
             color: #fff;
             font-family: 'Assistant', sans-serif;
-        }
-
-        body {
+            margin: 0;
+            padding: 20px;
+            padding-top: 80px; /* המרווח שביקשת מהפס העליון */
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* מרווח עליון לבריחה מהפס של הדפדפן בטלוויזיה */
-            padding-top: 90px; 
+            min-height: 100vh;
+            overflow: hidden; /* מונע גלילה במחשב ובטלוויזיה */
         }
-
         h1 {
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 800;
-            margin: 0 0 20px 0;
+            margin-bottom: 30px;
             letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(255,255,255,0.2);
         }
-
         #workout-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 עמודות */
+            grid-template-columns: repeat(3, 1fr); /* 3 כרטיסיות בשורה */
             grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
             gap: 20px;
-            width: 96%;
-            height: calc(100vh - 180px); /* התאמה מושלמת למסך ללא גלילה */
-            padding-bottom: 20px;
+            width: 95%;
+            max-width: 1600px;
+            height: calc(100vh - 200px);
         }
-
         .card {
             background: #111;
-            border: 1px solid #333;
+            border: 2px solid #333;
             border-radius: 15px;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
         .trainee-name {
             font-size: 1.8rem;
             font-weight: 700;
-            border-bottom: 1px solid #444;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            border-bottom: 2px solid #444;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             text-align: center;
-            color: #fff;
         }
-
         .exercise-list {
             list-style: none;
             padding: 0;
             margin: 0;
             text-align: right;
-            overflow-y: auto; /* מאפשר גלילה פנימית רק בתוך כרטיסייה אם יש המון תרגילים */
+            font-size: 1.4rem;
+            line-height: 1.4;
         }
-
         .exercise-item {
-            font-size: 1.3rem;
-            margin-bottom: 6px;
-            padding-right: 20px;
+            margin-bottom: 8px;
             position: relative;
-            line-height: 1.2;
+            padding-right: 20px;
         }
-
         .exercise-item::before {
             content: "•";
             position: absolute;
             right: 0;
             color: #777;
         }
-
-        #loading {
-            font-size: 24px;
-            margin-top: 100px;
-        }
     </style>
 </head>
 <body>
 
     <h1>ALMA'S STUDIO</h1>
-    <div id="loading">מתחבר לנתונים של עלמה...</div>
-    <div id="workout-grid" style="display: none;"></div>
+    <div id="workout-grid">טוען נתונים...</div>
 
     <script>
-        // ה-ID של הגיליון שלך מעודכן כאן
         const sheetId = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
         const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
@@ -109,49 +85,38 @@
             try {
                 const res = await fetch(base);
                 const text = await res.text();
-                // ניקוי המעטפת של גוגל לקבלת JSON נקי
+                // הניקוי של גוגל
                 const jsonData = JSON.parse(text.substr(47).slice(0, -2));
-                renderGrid(jsonData.table.rows);
-            } catch (error) {
-                console.error("Error:", error);
-                document.getElementById('loading').innerText = "שגיאה בטעינת הנתונים. וודאי שהגיליון ציבורי.";
+                const grid = document.getElementById('workout-grid');
+                grid.innerHTML = '';
+
+                // מושך את 6 השורות הראשונות
+                jsonData.table.rows.slice(0, 6).forEach((row) => {
+                    const name = row.c[0] ? row.c[0].v : 'מתאמנת';
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    
+                    let exercisesHtml = '';
+                    for (let i = 1; i < row.c.length; i++) {
+                        if (row.c[i] && row.c[i].v) {
+                            exercisesHtml += `<div class="exercise-item">${row.c[i].v}</div>`;
+                        }
+                    }
+
+                    card.innerHTML = `
+                        <div class="trainee-name">${name}</div>
+                        <div class="exercise-list">${exercisesHtml}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                console.error(e);
+                document.getElementById('workout-grid').innerText = "שגיאה בחיבור לגיליון. וודאי שהוא ציבורי (Anyone with the link can view).";
             }
         }
 
-        function renderGrid(rows) {
-            const grid = document.getElementById('workout-grid');
-            const loading = document.getElementById('loading');
-            grid.innerHTML = '';
-
-            // מציג את 6 המתאמנות הראשונות (שורות)
-            rows.slice(0, 6).forEach((row) => {
-                const name = row.c[0] ? row.c[0].v : 'מתאמנת';
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                let exercisesHtml = '';
-                // עובר על התרגילים (עמודות 2 והלאה)
-                for (let i = 1; i < row.c.length; i++) {
-                    if (row.c[i] && row.c[i].v !== null) {
-                        exercisesHtml += `<li class="exercise-item">${row.c[i].v}</li>`;
-                    }
-                }
-
-                card.innerHTML = `
-                    <div class="trainee-name">${name}</div>
-                    <ul class="exercise-list">${exercisesHtml}</ul>
-                `;
-                grid.appendChild(card);
-            });
-
-            loading.style.display = 'none';
-            grid.style.display = 'grid';
-        }
-
-        // טעינה ועדכון אוטומטי כל דקה
         fetchData();
-        setInterval(fetchData, 60000);
+        setInterval(fetchData, 60000); // עדכון אוטומטי כל דקה
     </script>
 </body>
 </html>
