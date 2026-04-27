@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma's Studio - Clean Edition</title>
+    <title>Alma's Studio - Full Screen</title>
     <style>
         * { box-sizing: border-box; }
         
         html, body { 
             height: 100vh; margin: 0; padding: 0;
             overflow: hidden; 
-            background-color: #050505; color: white;
+            background-color: #000; color: white;
             font-family: system-ui, -apple-system, sans-serif;
         }
 
         body { 
             display: flex; flex-direction: column; 
+            /* הטריק להעלמת שורת הכתובת: דוחפים את הכל למעלה */
+            margin-top: -45px; 
+            height: calc(100vh + 45px);
             padding: 10px;
-            padding-top: 50px; 
+            padding-top: 60px; /* מרווח פנימי כדי שהכותרת לא תיחתך */
         }
 
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #111; padding: 0 30px; border-radius: 15px; 
-            border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 10px;
+            border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px;
             flex-shrink: 0; position: relative;
         }
 
@@ -36,7 +39,7 @@
             width: 100%;
             grid-template-columns: repeat(3, 1fr); 
             grid-template-rows: repeat(2, 1fr);    
-            padding-bottom: 10px;
+            padding-bottom: 20px;
         }
 
         .card { 
@@ -116,7 +119,6 @@
                 const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
                 if (firstCell.includes("אימון")) {
                     const sessionTimeNum = parseInt(firstCell.replace(/[^0-9]/g, ""));
-                    // טווח של 45 דקות לפני ו-60 דקות אחרי תחילת אימון
                     if (currentTimeValue >= (sessionTimeNum - 45) && currentTimeValue < (sessionTimeNum + 60)) {
                         currentScanningSession = firstCell;
                         targetSessionRows = []; 
