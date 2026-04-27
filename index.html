@@ -2,74 +2,74 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ALMA'S STUDIO - LIVE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALMA'S STUDIO</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
-        html, body {
-            margin: 0; padding: 0;
-            height: 100vh; width: 100vw;
-            overflow: hidden; /* מונע גלילה לגמרי */
+        body {
             background-color: #000;
             color: #fff;
             font-family: 'Assistant', sans-serif;
-        }
-        body {
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            padding-top: 5vh; /* מרווח גמיש מלמעלה */
+            align-items: center;
+            min-height: 100vh;
         }
+
         h1 {
-            font-size: 3rem;
-            margin: 0 0 2vh 0;
-            text-align: center;
+            font-size: 4rem;
             font-weight: 800;
+            margin-bottom: 40px;
+            letter-spacing: 5px;
+            text-align: center;
         }
+
         #workout-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 15px;
-            padding: 0 20px 20px 20px;
-            flex-grow: 1; /* לוקח את כל המקום שנשאר */
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1400px;
         }
+
         .card {
             background: #111;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            min-height: 0; /* קריטי למניעת מתיחה */
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+            transition: transform 0.3s ease;
         }
+
         .trainee-name {
-            font-size: 1.8rem;
+            font-size: 2.5rem;
             font-weight: 700;
+            margin-bottom: 20px;
             border-bottom: 1px solid #444;
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+            padding-bottom: 15px;
             text-align: center;
-            color: #fff;
         }
+
         .exercise-list {
             list-style: none;
-            padding: 0; margin: 0;
+            padding: 0;
+            margin: 0;
             text-align: right;
-            overflow-y: auto; /* אם עדיין יש יותר מדי טקסט, תהיה גלילה פנימית קטנה בתוך הכרטיסייה */
-            flex-grow: 1;
         }
+
         .exercise-item {
-            font-size: 1.1rem; /* טקסט מעט קטן יותר כדי שייכנס הכל */
-            margin-bottom: 4px;
-            padding-right: 15px;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            padding-right: 25px;
             position: relative;
-            line-height: 1.2;
         }
+
         .exercise-item::before {
             content: "•";
             position: absolute;
             right: 0;
-            color: #777;
+            color: #555;
         }
     </style>
 </head>
@@ -82,38 +82,45 @@
         const sheetId = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
         const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-        async function fetchData() {
+        async function init() {
             try {
                 const res = await fetch(base);
                 const text = await res.text();
-                const jsonData = JSON.parse(text.substr(47).slice(0, -2));
+                const data = JSON.parse(text.substr(47).slice(0, -2));
+                
                 const grid = document.getElementById('workout-grid');
                 grid.innerHTML = '';
 
-                jsonData.table.rows.slice(0, 6).forEach((row) => {
-                    const name = row.c[0] ? row.c[0].v : 'אימון';
+                data.table.rows.forEach((row) => {
+                    const name = row.c[0] ? row.c[0].v : '';
+                    if (!name) return;
+
                     const card = document.createElement('div');
                     card.className = 'card';
                     
                     let exercisesHtml = '';
+                    // עובר על התרגילים בעמודות
                     for (let i = 1; i < row.c.length; i++) {
-                        if (row.c[i] && row.c[i].v) {
-                            // מנקה פורמטים מוזרים של תאריכים אם יש
-                            let val = row.c[i].v;
-                            if (typeof val === 'string' && val.includes('Date')) val = '';
-                            if (val) exercisesHtml += `<div class="exercise-item">${val}</div>`;
+                        if (row.c[i] && row.c[i].v && typeof row.c[i].v === 'string') {
+                            exercisesHtml += `<li class="exercise-item">${row.c[i].v}</li>`;
                         }
                     }
 
-                    card.innerHTML = `<div class="trainee-name">${name}</div><div class="exercise-list">${exercisesHtml}</div>`;
+                    card.innerHTML = `
+                        <div class="trainee-name">${name}</div>
+                        <ul class="exercise-list">${exercisesHtml}</ul>
+                    `;
                     grid.appendChild(card);
                 });
             } catch (e) {
                 console.error(e);
+                document.getElementById('workout-grid').innerHTML = 'שגיאה בטעינת הנתונים';
             }
         }
-        fetchData();
-        setInterval(fetchData, 60000);
+
+        init();
+        // רענון אוטומטי כל דקה
+        setInterval(init, 60000);
     </script>
 </body>
 </html>
