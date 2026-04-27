@@ -13,7 +13,7 @@
             padding: 0;
             height: 100vh;
             width: 100vw;
-            overflow: hidden; /* מבטל גלילה לגמרי */
+            overflow: hidden; /* מבטל גלילה לצדדים ולמטה */
             background-color: #000;
             color: #fff;
             font-family: 'Assistant', sans-serif;
@@ -23,43 +23,46 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* המרווח מלמעלה שימנע מהפס להסתיר את הכותרת */
-            padding-top: 100px; 
+            /* מרווח מלמעלה כדי לברוח מהפס של הדפדפן */
+            padding-top: 80px; 
         }
 
         h1 {
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 800;
-            margin: 0 0 20px 0;
-            color: #fff;
+            margin: 0 0 15px 0;
             text-transform: uppercase;
         }
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 בטור */
-            grid-template-rows: repeat(2, 1fr);    /* 2 בשורה */
+            grid-template-columns: repeat(3, 1fr); /* 3 עמודות */
+            grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
             gap: 15px;
-            width: 95%;
-            height: calc(100vh - 200px); /* מתאים את הגובה שנשאר למסך */
+            width: 98%;
+            /* מחשב את הגובה שנשאר למסך כדי שלא תהיה גלילה */
+            height: calc(100vh - 180px); 
+            padding-bottom: 20px;
         }
 
         .card {
             background: #111;
             border: 1px solid #333;
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 15px;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* מונע מהטקסט "לפוצץ" את הכרטיסייה */
         }
 
         .trainee-name {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             border-bottom: 1px solid #444;
             margin-bottom: 10px;
             padding-bottom: 5px;
             text-align: center;
+            color: #fff;
         }
 
         .exercise-list {
@@ -67,13 +70,17 @@
             padding: 0;
             margin: 0;
             text-align: right;
+            flex-grow: 1;
         }
 
         .exercise-item {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin-bottom: 8px;
-            padding-right: 15px;
+            padding-right: 20px;
             position: relative;
+            white-space: nowrap; /* מונע מהשורה לרדת למטה */
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .exercise-item::before {
