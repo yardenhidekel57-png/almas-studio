@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - 50 Inch Professional</title>
+    <title>Alma's Studio - 50 Inch Fixed Position</title>
     <style>
         * { box-sizing: border-box; }
         html, body { 
@@ -10,9 +10,8 @@
             background-color: #050505; color: white;
             font-family: system-ui, -apple-system, sans-serif;
         }
-        body { display: flex; flex-direction: column; padding: 1.5vh; }
+        body { display: flex; flex-direction: column; padding: 1vh; }
 
-        /* כותרת */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #111; padding: 0 40px; border-radius: 20px; 
@@ -20,52 +19,51 @@
             flex-shrink: 0;
         }
         .studio-logo { text-align: center; flex-grow: 1; }
-        .logo-main { font-size: 3.5rem; color: #ffd700; font-weight: 900; display: block; line-height: 1; }
-        .logo-sub { font-size: 1rem; color: #00ffcc; letter-spacing: 8px; text-transform: uppercase; }
+        .logo-main { font-size: 3.5rem; color: #ffd700; font-weight: 900; line-height: 1; }
+        .logo-sub { font-size: 1rem; color: #00ffcc; letter-spacing: 8px; }
 
-        /* גריד קשיח למניעת חפיפות */
+        /* גריד עם מיקום קשיח למניעת "ציפה" של כרטיסיות */
         #main-grid { 
             display: grid;
             grid-template-columns: repeat(3, 1fr); 
             grid-template-rows: repeat(2, 1fr);
             gap: 20px; 
             flex-grow: 1;
-            height: 85vh; /* מגביל את כל הגריד לשטח הנותר */
+            position: relative;
         }
 
         .card { 
             background: #161616; 
             border: 2px solid #333; 
             border-radius: 25px; 
-            padding: 20px; 
+            padding: 1.5vh; 
             display: flex; 
             flex-direction: column;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            max-height: 40vh; /* מבטיח שהכרטיסייה לא תגדל מעבר לחצי מסך */
+            height: 41vh; /* גובה קבוע לכל כרטיסייה למניעת חפיפה */
             overflow: hidden;
         }
 
         .name { 
-            font-size: 3rem; color: #ffd700; text-align: center; 
+            font-size: 2.8rem; color: #ffd700; text-align: center; 
             border-bottom: 2px solid #444; margin-bottom: 10px; 
-            padding-bottom: 8px; font-weight: 900;
+            padding-bottom: 5px; font-weight: 900;
             flex-shrink: 0;
         }
 
-        /* רשימת תרגילים עם גלילה פנימית אם יש עומס */
         .ex-list {
             flex-grow: 1;
             overflow-y: auto;
-            padding-right: 5px;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* עיצוב פס גלילה שיהיה נקי */
-        .ex-list::-webkit-scrollbar { width: 5px; }
-        .ex-list::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        /* מניעת הופעת פס גלילה מכוער */
+        .ex-list::-webkit-scrollbar { width: 0; }
 
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.8rem; padding: 10px 0; 
+            font-size: 1.6rem; padding: 8px 0; 
             border-bottom: 1px solid #222;
         }
 
@@ -73,19 +71,20 @@
             background: rgba(0, 255, 204, 0.1); 
             border: 1px solid rgba(0, 255, 204, 0.3);
             border-radius: 12px;
-            padding: 4px 15px;
+            padding: 2px 12px;
             color: #00ffcc;
             font-weight: 900;
-            font-size: 1.6rem;
-            min-width: 120px;
+            font-size: 1.5rem;
+            min-width: 100px;
             text-align: center;
         }
         
-        .weight-tag { color: #ff9f43; font-weight: bold; margin-right: 10px; font-size: 1.4rem; }
+        .weight-tag { color: #ff9f43; font-weight: bold; margin-right: 10px; font-size: 1.3rem; }
 
-        /* התאמה ל-5 מתאמנות: האחרונות יתמרכזו */
-        #main-grid > div:nth-child(4) { grid-column: 1 / 2; }
-        #main-grid > div:nth-child(5) { grid-column: 2 / 3; }
+        /* הבטחת סידור המתאמנות בשורה השנייה למטה */
+        .card:nth-child(4), .card:nth-child(5) {
+            grid-row: 2;
+        }
     </style>
 </head>
 <body>
