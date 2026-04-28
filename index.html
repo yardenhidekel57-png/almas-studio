@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Debug Mode</title>
+    <title>Alma's Studio - Iron Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
@@ -20,7 +20,7 @@
 </head>
 <body>
     <div class="header">
-        <div id="date">טוען נתונים...</div>
+        <div id="date">מעדכן...</div>
         <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
         <div id="time" style="font-size: 2rem; color: #00ffcc;">00:00:00</div>
     </div>
@@ -35,34 +35,62 @@
                 const response = await fetch(url);
                 const text = await response.text();
                 const json = JSON.parse(text.substr(47).slice(0, -2));
-                
-                const grid = document.getElementById('main-grid');
-                grid.innerHTML = '';
                 const rows = json.table.rows;
                 
-                // מציג את 6 השורות הראשונות שהן לא כותרות, בלי קשר לשעה
-                let count = 0;
-                for (let i = 0; i < rows.length && count < 6; i++) {
-                    const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString() : "";
-                    if (firstCell && !firstCell.includes("אימון") && !firstCell.includes("מתאמנת")) {
-                        let html = `<div class="card"><div class="name">${firstCell}</div><div>`;
-                        for (let j = 1; j < rows[i].c.length; j += 3) {
-                            const ex = rows[i].c[j] ? rows[i].c[j].v : '';
-                            const reps = rows[i].c[j+2] ? rows[i].c[j+2].v : '';
-                            if (ex) html += `<div class="ex-row"><span>${ex}</span><span class="reps">${reps}</span></div>`;
+                const grid = document.getElementById('main-grid');
+                const now = new Date();
+                const currentMin = now.getHours() * 60 + now.getMinutes();
+                
+                let sessionRows = [];
+                let active = false;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const rowData = rows[i].c;
+                    if (!rowData || !rowData[0]) continue;
+                    
+                    const firstCell = rowData[0].v ? rowData[0].v.toString() : "";
+                    
+                    if (firstCell.includes("אימון")) {
+                        const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
+                        if (timeMatch) {
+                            const sTotal = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
+                            // מציג אם אנחנו בטווח של 30 דקות לפני עד 90 דקות אחרי
+                            active = (currentMin >= sTotal - 30 && currentMin <= sTotal + 90);
+                            if (active) sessionRows = [];
                         }
-                        grid.innerHTML += html + `</div></div>`;
-                        count++;
+                        continue;
+                    }
+
+                    if (active && firstCell && isNaN(firstCell)) {
+                        sessionRows.push(rowData);
                     }
                 }
+
+                grid.innerHTML = '';
+                sessionRows.slice(0, 6).forEach(rowData => {
+                    const name = rowData[0].v;
+                    let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
+                    // סורק את כל העמודות בשורה כדי למצוא תרגילים
+                    for (let j = 1; j < rowData.length; j++) {
+                        if (rowData[j] && rowData[j].v && isNaN(rowData[j].v)) {
+                            const exName = rowData[j].v;
+                            const weight = (rowData[j+1] && rowData[j+1].v) ? rowData[j+1].v : "";
+                            const reps = (rowData[j+2] && rowData[j+2].v) ? rowData[j+2].v : "";
+                            html += `<div class="ex-row"><span>${exName} ${weight}</span><span class="reps">${reps}</span></div>`;
+                            j += 2; // קופץ לעמודה הבאה של תרגיל
+                        }
+                    }
+                    grid.innerHTML += html + `</div></div>`;
+                });
+
+                document.getElementById('date').innerText = now.toLocaleDateString('he-IL');
             } catch (e) { console.error(e); }
         }
 
-        setInterval(fetchData, 5000);
+        setInterval(fetchData, 8000);
         setInterval(() => {
             const n = new Date();
             document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
-            document.getElementById('date').innerText = n.toLocaleDateString('he-IL');
         }, 1000);
         fetchData();
     </script>
