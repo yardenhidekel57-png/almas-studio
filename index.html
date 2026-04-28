@@ -2,80 +2,168 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Final Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alma's Studio - Guaranteed Visibility</title>
     <style>
         * { box-sizing: border-box; }
-        html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
-        body { display: flex; flex-direction: column; padding: 10px; padding-top: 80px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0 30px; border-radius: 15px; border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px; position: relative; }
+        
+        html, body { 
+            height: 100vh; margin: 0; overflow: hidden; 
+            background-color: #050505; color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body { display: flex; flex-direction: column; padding: 10px; }
+
+        /* צמצום קל של הכותרת כדי להרוויח מקום לכרטיסיות */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #111; padding: 0 30px; border-radius: 15px; 
+            border-bottom: 4px solid #00ffcc; height: 9vh; margin-bottom: 8px;
+            flex-shrink: 0; position: relative;
+        }
+
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; }
-        .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; display: block; }
-        #main-grid { display: grid; gap: 15px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .card { background: #161616; border: 2px solid #333; border-radius: 25px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .name { font-size: 2.2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 12px; font-weight: 900; }
-        .ex-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1.3rem; border-bottom: 1px solid #222; }
-        .reps { color: #00ffcc; font-weight: bold; }
+        .logo-main { font-size: 2.5rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; }
+        .logo-sub { font-size: 0.8rem; color: #00ffcc; letter-spacing: 5px; text-transform: uppercase; display: block; margin-top: -5px; }
+
+        #main-grid { 
+            display: grid; gap: 12px; flex-grow: 1; height: 89vh; width: 100%;
+            grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
+            grid-auto-rows: 1fr; 
+        }
+
+        .card { 
+            background: #161616; border: 2px solid #333; border-radius: 20px; 
+            padding: 15px; display: flex; flex-direction: column;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            min-height: 0; 
+        }
+
+        .name { 
+            font-size: clamp(1.4rem, 4vh, 2.5rem); color: #ffd700; 
+            text-align: center; border-bottom: 2px solid #444; 
+            margin-bottom: 5px; padding-bottom: 3px; font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .ex-list {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly; /* מפזר תרגילים לאורך כל הגובה הזמין */
+            overflow: hidden;
+        }
+
+        /* פונט גמיש - מתכווץ אם יש הרבה שורות */
+        .ex-row { 
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: clamp(0.9rem, 2.1vh, 1.8rem); 
+            padding: 2px 0; 
+            border-bottom: 1px solid #222;
+            flex-shrink: 1; /* מאפשר לשורה להתכווץ מעט בגובה */
+        }
+
+        .ex-info { display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; }
+
+        .weight {
+            color: #ff9f43; font-weight: bold; background: rgba(255, 159, 67, 0.1);
+            padding: 1px 8px; border-radius: 6px; font-size: 0.85em;
+        }
+
+        .reps { 
+            color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); 
+            padding: 1px 12px; border-radius: 8px; flex-shrink: 0;
+        }
+
+        #session-label { position: absolute; bottom: 10px; right: 20px; color: #ffd700; font-size: 1.1rem; font-weight: bold; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <div id="date">--/--</div>
-        <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
-        <div id="time" style="font-size: 2.5rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
+        <div id="date" style="font-size: 1.3rem;">--/--</div>
+        <div class="studio-logo">
+            <span class="logo-main">Alma's</span>
+            <span class="logo-sub">STUDIO</span>
+        </div>
+        <div id="time" style="font-size: 2.2rem; color: #00ffcc; font-weight: bold;">00:00:00</div>
     </div>
+
     <div id="main-grid"></div>
+    <div id="session-label">טוען...</div>
 
     <script>
-        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
 
-        // פונקציית הקסם שגוגל תפעיל
-        function handleResponse(response) {
-            const rows = response.table.rows;
+        function googleDocCallback(data) {
+            if (!data || !data.table) return;
+            const rows = data.table.rows;
             const grid = document.getElementById('main-grid');
             grid.innerHTML = '';
-            
-            let count = 0;
-            for (let i = 0; i < rows.length && count < 6; i++) {
-                const row = rows[i].c;
-                if (!row || !row[0] || !row[0].v) continue;
-                
-                const firstVal = row[0].v.toString();
-                if (firstVal.includes("אימון") || firstVal.includes("מתאמנת")) continue;
 
-                let html = `<div class="card"><div class="name">${firstVal}</div><div>`;
-                for (let j = 1; j < row.length; j += 3) {
-                    if (row[j] && row[j].v) {
-                        const ex = row[j].v;
-                        const w = (row[j+1] && row[j+1].v) ? row[j+1].v : "";
-                        const r = (row[j+2] && row[j+2].v) ? row[j+2].v : "";
-                        html += `<div class="ex-row"><span>${ex} ${w}</span><span class="reps">${r}</span></div>`;
-                    }
+            const now = new Date();
+            const currentTimeValue = now.getHours() * 100 + now.getMinutes();
+
+            let targetSessionRows = [];
+            let currentScanningSession = "";
+
+            for (let i = 0; i < rows.length; i++) {
+                const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+                if (firstCell.includes("אימון")) {
+                    const sessionTimeNum = parseInt(firstCell.replace(/[^0-9]/g, ""));
+                    if (currentTimeValue >= (sessionTimeNum - 30) && currentTimeValue < (sessionTimeNum + 60)) {
+                        currentScanningSession = firstCell;
+                        targetSessionRows = []; 
+                    } else { currentScanningSession = ""; }
+                    continue; 
                 }
-                grid.innerHTML += html + `</div></div>`;
-                count++;
+                if (currentScanningSession !== "" && firstCell !== "" && isNaN(firstCell)) {
+                    targetSessionRows.push(rows[i]);
+                }
+            }
+
+            document.getElementById('session-label').innerText = currentScanningSession || "אין אימון קרוב";
+
+            if (targetSessionRows.length > 0) {
+                const count = targetSessionRows.length;
+                let cols = count <= 3 ? count : 3;
+                if (count > 6) cols = 4;
+                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+                targetSessionRows.forEach(row => {
+                    const name = row.c[0].v;
+                    let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
+                    let exCount = 0;
+                    for (let j = 1; j < row.c.length; j += 3) {
+                        const ex = row.c[j] ? row.c[j].v : '';
+                        const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
+                        const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
+                        if (ex && ex !== "" && ex !== "...") {
+                            html += `<div class="ex-row"><div class="ex-info"><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
+                            exCount++;
+                        }
+                    }
+                    html += `</div></div>`;
+                    grid.innerHTML += html;
+                });
             }
         }
 
-        function refreshData() {
-            // מסיר סקריפט קודם אם קיים
-            const oldScript = document.getElementById('google-script');
-            if (oldScript) oldScript.remove();
-
+        function refresh() {
             const s = document.createElement('script');
-            s.id = 'google-script';
-            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleResponse&tcb=${Date.now()}`;
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:googleDocCallback&gid=0&tcb=${Date.now()}`;
             document.body.appendChild(s);
         }
 
-        setInterval(refreshData, 10000);
-        setInterval(() => {
-            const n = new Date();
-            document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
-            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {weekday: 'long', day: 'numeric', month: 'numeric'});
-        }, 1000);
-        
-        refreshData();
+        function clock() {
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL');
+            document.getElementById('date').innerText = new Date().toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
+        }
+
+        setInterval(refresh, 5000);
+        setInterval(clock, 1000);
+        refresh(); clock();
     </script>
 </body>
 </html>
