@@ -2,109 +2,85 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - All Trainees View</title>
+    <title>Alma's Studio - Force Display All</title>
     <style>
         * { box-sizing: border-box; }
-        html, body { 
-            height: 100vh; margin: 0; overflow: hidden; 
-            background-color: #050505; color: white;
-            font-family: system-ui, sans-serif;
-        }
+        html, body { height: 100vh; margin: 0; overflow: hidden; background-color: #050505; color: white; font-family: system-ui, sans-serif; }
         body { display: flex; flex-direction: column; padding: 15px; }
-
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #111; padding: 0 30px; border-radius: 15px; 
-            border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px;
-            flex-shrink: 0; position: relative;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0 30px; border-radius: 15px; border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px; position: relative; }
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
         .logo-main { font-size: 2.8rem; color: #ffd700; font-weight: 900; }
-        .logo-sub { font-size: 0.9rem; color: #00ffcc; letter-spacing: 5px; display: block; margin-top: -5px; }
-
-        #main-grid { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(2, 1fr);
-            gap: 20px; flex-grow: 1;
-        }
-
-        .card { 
-            background: #161616; border: 1px solid #333; border-radius: 25px; 
-            padding: 15px; display: flex; flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .name { 
-            font-size: 2.2rem; color: #ffd700; text-align: center; 
-            border-bottom: 2px solid #444; margin-bottom: 10px; 
-            padding-bottom: 5px; font-weight: 900;
-        }
-
+        .logo-sub { font-size: 0.9rem; color: #00ffcc; letter-spacing: 5px; display: block; }
+        #main-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 15px; flex-grow: 1; }
+        .card { background: #161616; border: 1px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .name { font-size: 2.2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 10px; font-weight: 900; }
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
-
-        .ex-row { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.3rem; padding: 5px 0; border-bottom: 1px solid #222;
-        }
-
+        .ex-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem; padding: 4px 0; border-bottom: 1px solid #222; }
         .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 10px; border-radius: 8px; }
         .weight { color: #ff9f43; font-weight: bold; margin-left: 5px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="date" style="font-size: 1.3rem;">--/--</div>
+        <div id="date">--/--</div>
         <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
-        <div id="time" style="font-size: 2.2rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
+        <div id="time" style="font-size: 2.5rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
     </div>
     <div id="main-grid"></div>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
 
-        function handleData(data) {
+        function drawBoard(data) {
             const rows = data.table.rows;
             const grid = document.getElementById('main-grid');
             grid.innerHTML = '';
             let count = 0;
 
-            for (let i = 0; i < rows.length && count < 6; i++) {
-                const c = rows[i].c;
-                if (!c || !c[0] || !c[0].v) continue;
-
-                const name = c[0].v.toString().trim();
+            // סורק את הגיליון ללא תנאים מחמירים
+            for (let i = 0; i < rows.length; i++) {
+                if (count >= 6) break; 
                 
-                // סינון מינימלי בלבד - כדי לא לפספס אף אחת
-                if (name === "" || name.includes("אימון") || name === "מתאמנת" || name === "עלמה") continue;
+                const r = rows[i].c;
+                if (!r || !r[0] || !r[0].v) continue;
+
+                const name = r[0].v.toString().trim();
+                
+                // מדלג רק אם השורה ריקה לחלוטין או מכילה את המילה "אימון"
+                if (name === "" || name.includes("אימון") || name.length < 2) continue;
 
                 let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
-                for (let j = 1; j < c.length; j += 3) {
-                    if (c[j] && c[j].v && c[j].v !== "...") {
-                        const ex = c[j].v;
-                        const w = (c[j+1] && c[j+1].v) ? c[j+1].v : "";
-                        const r = (c[j+2] && c[j+2].v) ? c[j+2].v : "";
-                        html += `<div class="ex-row"><div><span>${ex}</span> <span class="weight">${w}</span></div><span class="reps">${r}</span></div>`;
+                let hasExercises = false;
+
+                for (let j = 1; j < r.length; j += 3) {
+                    const ex = r[j] ? r[j].v : null;
+                    if (ex && ex !== "...") {
+                        const w = (r[j+1] && r[j+1].v) ? r[j+1].v : "";
+                        const reps = (r[j+2] && r[j+2].v) ? r[j+2].v : "";
+                        html += `<div class="ex-row"><div><span>${ex}</span> <span class="weight">${w}</span></div><span class="reps">${reps}</span></div>`;
+                        hasExercises = true;
                     }
                 }
-                grid.innerHTML += html + `</div></div>`;
+                
+                html += `</div></div>`;
+                grid.innerHTML += html;
                 count++;
             }
         }
 
-        function refresh() {
+        function load() {
             const s = document.createElement('script');
-            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:drawBoard&gid=0&tcb=${Date.now()}`;
             document.body.appendChild(s);
         }
 
-        setInterval(refresh, 10000);
+        setInterval(load, 8000);
         setInterval(() => {
             const n = new Date();
             document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
-            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
+            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {day:'numeric', month:'numeric'});
         }, 1000);
-        refresh();
+        load();
     </script>
 </body>
 </html>
