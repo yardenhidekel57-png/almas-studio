@@ -2,75 +2,89 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Plasma Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alma's Studio - Universal Display</title>
     <style>
-        * { box-sizing: border-box; }
+        /* הגדרות בסיס למניעת גלילה וחריגות */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { 
-            height: 100vh; margin: 0; overflow: hidden; 
+            height: 100vh; width: 100vw; overflow: hidden; 
             background-color: #050505; color: white;
             font-family: system-ui, sans-serif;
         }
-        body { display: flex; flex-direction: column; padding: 10px; }
+        body { display: flex; flex-direction: column; padding: 1vh; }
 
+        /* כותרת בגובה קבוע - 12% מהמסך */
         .header { 
-            height: 10vh; background: #111; display: flex; 
+            height: 12vh; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 30px; border-bottom: 4px solid #00ffcc; border-radius: 15px;
-            margin-bottom: 10px; flex-shrink: 0;
+            padding: 0 3vw; border-bottom: 0.5vh solid #00ffcc; border-radius: 2vh;
+            margin-bottom: 1.5vh; flex-shrink: 0;
         }
-        .logo-main { font-size: 3rem; color: #ffd700; font-weight: 900; }
+        .logo-main { font-size: 5vh; color: #ffd700; font-weight: 900; }
+        #time { font-size: 5vh; color: #00ffcc; font-weight: 900; }
+        #date { font-size: 2.5vh; color: #888; }
 
-        /* מיכל ראשי גמיש */
+        /* מיכל הכרטיסיות - 85% מהמסך */
         #container {
+            height: 84vh;
             display: flex;
             flex-direction: column;
-            height: 88vh;
-            gap: 15px;
+            gap: 2vh;
         }
 
-        /* שורות בגובה קבוע - זה מונע את העלייה אחד על השני */
+        /* שורות בגובה קבוע - 41% מהמסך לכל שורה */
         .row {
             display: flex;
-            height: 48%; /* חלוקה שווה בין שתי שורות */
-            gap: 15px;
+            height: 41vh;
+            gap: 2vw;
             justify-content: center;
         }
 
         .card { 
-            background: #161616; border: 2px solid #333; border-radius: 20px; 
+            background: #161616; border: 0.3vh solid #333; border-radius: 3vh; 
             display: flex; flex-direction: column; flex: 1;
-            padding: 15px; overflow: hidden;
-            max-width: 32%; /* שלוש כרטיסיות בשורה */
+            padding: 1.5vh; overflow: hidden;
+            max-width: 31vw; /* מבטיח ש-3 כרטיסיות יכנסו ברוחב */
         }
 
         .name { 
-            font-size: 2.5rem; color: #ffd700; text-align: center; 
-            border-bottom: 2px solid #444; margin-bottom: 10px; font-weight: 900;
+            font-size: 4vh; color: #ffd700; text-align: center; 
+            border-bottom: 0.2vh solid #444; margin-bottom: 1vh; font-weight: 900;
+            white-space: nowrap;
         }
 
-        .ex-list { flex-grow: 1; overflow-y: auto; }
-        .ex-list::-webkit-scrollbar { width: 0; } /* הסתרת סקרולר */
+        /* רשימת תרגילים שתמיד נשארת בתוך הריבוע */
+        .ex-list { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 0.5vh;
+        }
+        .ex-list::-webkit-scrollbar { width: 0; }
 
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.5rem; padding: 8px 0; border-bottom: 1px solid #222;
+            font-size: 2.4vh; /* פונט שנגזר מגובה המסך */
+            padding: 0.8vh 0; border-bottom: 0.1vh solid #222;
         }
 
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 2px 10px; border-radius: 8px; border: 1px solid #00ffcc;
-            font-size: 1.4rem;
+            padding: 0.4vh 1.2vw; border-radius: 1vh; border: 0.2vh solid #00ffcc;
+            font-size: 2.2vh; min-width: 7vw; text-align: center;
         }
         
-        .weight { color: #ff9f43; font-weight: bold; font-size: 1.2rem; margin-right: 5px; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 2vh; margin-right: 1vw; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div id="date" style="font-size: 1.5rem;">--/--</div>
+        <div id="date">--/--</div>
         <div class="logo-main">Alma's STUDIO</div>
-        <div id="time" style="font-size: 2.5rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
+        <div id="time">00:00:00</div>
     </div>
 
     <div id="container">
@@ -93,6 +107,8 @@
                 const r = rows[i].c;
                 if (!r || !r[0] || !r[0].v) continue;
                 const name = r[0].v.toString().trim();
+                
+                // התעלמות משורות כותרת או אימון
                 if (name === "" || name.includes("אימון") || name === "מתאמנת") continue;
 
                 let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
