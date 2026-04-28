@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Final Fix</title>
+    <title>Alma's Studio - Debug Mode</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
@@ -13,15 +13,14 @@
         .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; display: block; }
         #main-grid { display: grid; gap: 12px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
         .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; }
-        .name { font-size: 2.2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 8px; font-weight: 900; }
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; }
-        .ex-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222; font-size: 1.3rem; }
+        .name { font-size: 1.8rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 8px; font-weight: 900; }
+        .ex-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 1.1rem; border-bottom: 1px solid #222; }
         .reps { color: #00ffcc; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="date">--/--</div>
+        <div id="date">טוען נתונים...</div>
         <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
         <div id="time" style="font-size: 2rem; color: #00ffcc;">00:00:00</div>
     </div>
@@ -29,7 +28,6 @@
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
-        const GID = '0'; // מבטיח קריאה מהטאב הראשון
 
         async function fetchData() {
             try {
@@ -37,52 +35,34 @@
                 const response = await fetch(url);
                 const text = await response.text();
                 const json = JSON.parse(text.substr(47).slice(0, -2));
-                render(json.table.rows);
-            } catch (e) { console.error("Error fetching data", e); }
-        }
-
-        function render(rows) {
-            const grid = document.getElementById('main-grid');
-            const now = new Date();
-            const currentTotal = now.getHours() * 60 + now.getMinutes();
-            let targetRows = [];
-            let isInside = false;
-
-            for (let i = 0; i < rows.length; i++) {
-                const cell = rows[i].c[0] ? rows[i].c[0].v.toString() : "";
-                if (cell.includes("אימון")) {
-                    const match = cell.match(/(\d{1,2}):(\d{2})/);
-                    if (match) {
-                        const sTotal = parseInt(match[1]) * 60 + parseInt(match[2]);
-                        // טווח רחב במיוחד לבדיקה: 30 דקות לפני עד 90 דקות אחרי
-                        isInside = (currentTotal >= sTotal - 30 && currentTotal <= sTotal + 90);
-                        if (isInside) targetRows = []; 
+                
+                const grid = document.getElementById('main-grid');
+                grid.innerHTML = '';
+                const rows = json.table.rows;
+                
+                // מציג את 6 השורות הראשונות שהן לא כותרות, בלי קשר לשעה
+                let count = 0;
+                for (let i = 0; i < rows.length && count < 6; i++) {
+                    const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString() : "";
+                    if (firstCell && !firstCell.includes("אימון") && !firstCell.includes("מתאמנת")) {
+                        let html = `<div class="card"><div class="name">${firstCell}</div><div>`;
+                        for (let j = 1; j < rows[i].c.length; j += 3) {
+                            const ex = rows[i].c[j] ? rows[i].c[j].v : '';
+                            const reps = rows[i].c[j+2] ? rows[i].c[j+2].v : '';
+                            if (ex) html += `<div class="ex-row"><span>${ex}</span><span class="reps">${reps}</span></div>`;
+                        }
+                        grid.innerHTML += html + `</div></div>`;
+                        count++;
                     }
-                    continue;
                 }
-                if (isInside && cell !== "" && isNaN(cell)) {
-                    targetRows.push(rows[i]);
-                }
-            }
-
-            grid.innerHTML = '';
-            targetRows.slice(0, 6).forEach(row => {
-                const name = row.c[0].v;
-                let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
-                for (let j = 1; j < row.c.length; j += 3) {
-                    const ex = row.c[j] ? row.c[j].v : '';
-                    const reps = row.c[j+2] ? row.c[j+2].v : '';
-                    if (ex) html += `<div class="ex-row"><span>${ex}</span><span class="reps">${reps}</span></div>`;
-                }
-                grid.innerHTML += html + `</div></div>`;
-            });
+            } catch (e) { console.error(e); }
         }
 
         setInterval(fetchData, 5000);
         setInterval(() => {
             const n = new Date();
             document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
-            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
+            document.getElementById('date').innerText = n.toLocaleDateString('he-IL');
         }, 1000);
         fetchData();
     </script>
