@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Iron Sync</title>
+    <title>Alma's Studio - Fixed Grid</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
@@ -12,17 +12,18 @@
         .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; }
         .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; display: block; }
         #main-grid { display: grid; gap: 12px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; }
-        .name { font-size: 1.8rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 8px; font-weight: 900; }
-        .ex-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 1.1rem; border-bottom: 1px solid #222; }
+        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; }
+        .name { font-size: 2.2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 12px; font-weight: 900; padding-bottom: 5px; }
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; }
+        .ex-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1.3rem; border-bottom: 1px solid #222; }
         .reps { color: #00ffcc; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="date">מעדכן...</div>
+        <div id="date" style="font-size: 1.2rem;">--/--</div>
         <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
-        <div id="time" style="font-size: 2rem; color: #00ffcc;">00:00:00</div>
+        <div id="time" style="font-size: 2.2rem; color: #00ffcc; font-weight: bold;">00:00:00</div>
     </div>
     <div id="main-grid"></div>
 
@@ -41,45 +42,46 @@
                 const now = new Date();
                 const currentMin = now.getHours() * 60 + now.getMinutes();
                 
-                let sessionRows = [];
-                let active = false;
+                let traineesData = [];
+                let isCapturing = false;
 
                 for (let i = 0; i < rows.length; i++) {
-                    const rowData = rows[i].c;
-                    if (!rowData || !rowData[0]) continue;
+                    const row = rows[i].c;
+                    if (!row || !row[0] || !row[0].v) continue;
                     
-                    const firstCell = rowData[0].v ? rowData[0].v.toString() : "";
+                    const firstCell = row[0].v.toString();
                     
                     if (firstCell.includes("אימון")) {
                         const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
                         if (timeMatch) {
                             const sTotal = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
-                            // מציג אם אנחנו בטווח של 30 דקות לפני עד 90 דקות אחרי
-                            active = (currentMin >= sTotal - 30 && currentMin <= sTotal + 90);
-                            if (active) sessionRows = [];
+                            isCapturing = (currentMin >= sTotal - 20 && currentMin <= sTotal + 90);
                         }
                         continue;
                     }
 
-                    if (active && firstCell && isNaN(firstCell)) {
-                        sessionRows.push(rowData);
+                    if (isCapturing && isNaN(firstCell) && firstCell !== "מתאמנת") {
+                        // בניית אובייקט למתאמנת
+                        let trainee = { name: firstCell, exercises: [] };
+                        for (let j = 1; j < row.length; j += 3) {
+                            if (row[j] && row[j].v) {
+                                trainee.exercises.push({
+                                    name: row[j].v,
+                                    weight: (row[j+1] && row[j+1].v) ? row[j+1].v : "",
+                                    reps: (row[j+2] && row[j+2].v) ? row[j+2].v : ""
+                                });
+                            }
+                        }
+                        traineesData.push(trainee);
                     }
                 }
 
                 grid.innerHTML = '';
-                sessionRows.slice(0, 6).forEach(rowData => {
-                    const name = rowData[0].v;
-                    let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
-                    // סורק את כל העמודות בשורה כדי למצוא תרגילים
-                    for (let j = 1; j < rowData.length; j++) {
-                        if (rowData[j] && rowData[j].v && isNaN(rowData[j].v)) {
-                            const exName = rowData[j].v;
-                            const weight = (rowData[j+1] && rowData[j+1].v) ? rowData[j+1].v : "";
-                            const reps = (rowData[j+2] && rowData[j+2].v) ? rowData[j+2].v : "";
-                            html += `<div class="ex-row"><span>${exName} ${weight}</span><span class="reps">${reps}</span></div>`;
-                            j += 2; // קופץ לעמודה הבאה של תרגיל
-                        }
-                    }
+                traineesData.slice(0, 6).forEach(t => {
+                    let html = `<div class="card"><div class="name">${t.name}</div><div class="ex-list">`;
+                    t.exercises.forEach(ex => {
+                        html += `<div class="ex-row"><span>${ex.name} ${ex.weight}</span><span class="reps">${ex.reps}</span></div>`;
+                    });
                     grid.innerHTML += html + `</div></div>`;
                 });
 
@@ -87,7 +89,7 @@
             } catch (e) { console.error(e); }
         }
 
-        setInterval(fetchData, 8000);
+        setInterval(fetchData, 10000);
         setInterval(() => {
             const n = new Date();
             document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
