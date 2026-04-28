@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - 50 Inch Fixed</title>
+    <title>Alma's Studio - 50 Inch Professional</title>
     <style>
         * { box-sizing: border-box; }
         html, body { 
@@ -10,82 +10,93 @@
             background-color: #050505; color: white;
             font-family: system-ui, -apple-system, sans-serif;
         }
-        body { display: flex; flex-direction: column; padding: 20px; }
+        body { display: flex; flex-direction: column; padding: 1.5vh; }
 
+        /* כותרת */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #111; padding: 0 40px; border-radius: 20px; 
-            border-bottom: 6px solid #00ffcc; height: 12vh; margin-bottom: 20px;
+            border-bottom: 5px solid #00ffcc; height: 10vh; margin-bottom: 2vh;
             flex-shrink: 0;
         }
         .studio-logo { text-align: center; flex-grow: 1; }
-        .logo-main { font-size: 4.5rem; color: #ffd700; font-weight: 900; display: block; line-height: 1; }
-        .logo-sub { font-size: 1.2rem; color: #00ffcc; letter-spacing: 10px; text-transform: uppercase; }
+        .logo-main { font-size: 3.5rem; color: #ffd700; font-weight: 900; display: block; line-height: 1; }
+        .logo-sub { font-size: 1rem; color: #00ffcc; letter-spacing: 8px; text-transform: uppercase; }
 
-        /* גריד שמתאים את עצמו אוטומטית ל-5 מתאמנות */
+        /* גריד קשיח למניעת חפיפות */
         #main-grid { 
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 עמודות */
-            grid-template-rows: 1fr 1fr;           /* 2 שורות שוות */
-            gap: 25px; 
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px; 
             flex-grow: 1;
-            min-height: 0; /* מונע מהגריד לקרוס */
+            height: 85vh; /* מגביל את כל הגריד לשטח הנותר */
         }
 
         .card { 
             background: #161616; 
             border: 2px solid #333; 
-            border-radius: 30px; 
-            padding: 25px; 
+            border-radius: 25px; 
+            padding: 20px; 
             display: flex; 
             flex-direction: column;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-            overflow: hidden; /* מונע מהטקסט לצאת החוצה */
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            max-height: 40vh; /* מבטיח שהכרטיסייה לא תגדל מעבר לחצי מסך */
+            overflow: hidden;
         }
-
-        /* המתאמנת הרביעית והחמישית יתפסו מקום בשורה השנייה */
-        /* אם תרצי שהן יהיו במרכז השורה השנייה, אפשר להוסיף לוגיקה נוספת, אבל כרגע זה ישמור על סדר */
 
         .name { 
-            font-size: 3.5rem; color: #ffd700; text-align: center; 
-            border-bottom: 3px solid #444; margin-bottom: 15px; 
-            padding-bottom: 10px; font-weight: 900;
-            white-space: nowrap;
+            font-size: 3rem; color: #ffd700; text-align: center; 
+            border-bottom: 2px solid #444; margin-bottom: 10px; 
+            padding-bottom: 8px; font-weight: 900;
+            flex-shrink: 0;
         }
 
+        /* רשימת תרגילים עם גלילה פנימית אם יש עומס */
         .ex-list {
             flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start; /* הצמדה למעלה למניעת מתיחה מוזרה */
-            gap: 10px;
+            overflow-y: auto;
+            padding-right: 5px;
         }
+
+        /* עיצוב פס גלילה שיהיה נקי */
+        .ex-list::-webkit-scrollbar { width: 5px; }
+        .ex-list::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 2.2rem; /* פונט ענק ל-50 אינץ' */
-            padding: 12px 0; 
+            font-size: 1.8rem; padding: 10px 0; 
             border-bottom: 1px solid #222;
         }
 
-        .reps { 
-            color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 5px 20px; border-radius: 15px; border: 2px solid rgba(0, 255, 204, 0.3);
-            min-width: 100px; text-align: center;
+        .reps-box {
+            background: rgba(0, 255, 204, 0.1); 
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 12px;
+            padding: 4px 15px;
+            color: #00ffcc;
+            font-weight: 900;
+            font-size: 1.6rem;
+            min-width: 120px;
+            text-align: center;
         }
         
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 15px; font-size: 1.8rem; }
+        .weight-tag { color: #ff9f43; font-weight: bold; margin-right: 10px; font-size: 1.4rem; }
+
+        /* התאמה ל-5 מתאמנות: האחרונות יתמרכזו */
+        #main-grid > div:nth-child(4) { grid-column: 1 / 2; }
+        #main-grid > div:nth-child(5) { grid-column: 2 / 3; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div id="date" style="font-size: 2.5rem; color: #888;">--/--</div>
+        <div id="date" style="font-size: 2rem; color: #888;">--/--</div>
         <div class="studio-logo">
             <span class="logo-main">Alma's</span>
             <span class="logo-sub">STUDIO</span>
         </div>
-        <div id="time" style="font-size: 4rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
+        <div id="time" style="font-size: 3rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
     </div>
 
     <div id="main-grid"></div>
@@ -115,8 +126,8 @@
                         const w = (r[j+1] && r[j+1].v) ? r[j+1].v : '';
                         const reps = (r[j+2] && r[j+2].v) ? r[j+2].v : '';
                         cardHtml += `<div class="ex-row">
-                                        <div><span>${ex}</span> <span class="weight">${w}</span></div>
-                                        <span class="reps">${reps}</span>
+                                        <div><span>${ex}</span> <span class="weight-tag">${w}</span></div>
+                                        <div class="reps-box">${reps}</div>
                                      </div>`;
                     }
                 }
