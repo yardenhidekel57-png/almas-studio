@@ -2,105 +2,94 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Smooth Sync</title>
+    <title>Alma's Studio - Display All</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
         body { display: flex; flex-direction: column; padding: 10px; padding-top: 80px; }
+        
+        /* כותרת עליונה */
         .header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0 30px; border-radius: 15px; border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px; position: relative; }
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; }
+        .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; text-transform: uppercase; }
         .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; display: block; }
-        #main-grid { display: grid; gap: 12px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; }
-        .name { font-size: 2.2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 12px; font-weight: 900; padding-bottom: 5px; }
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; }
-        .ex-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1.3rem; border-bottom: 1px solid #222; }
-        .reps { color: #00ffcc; font-weight: bold; }
+        
+        /* גריד הכרטיסיות */
+        #main-grid { display: grid; gap: 15px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+        
+        /* עיצוב כרטיסייה */
+        .card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 2px solid #333; border-radius: 25px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 10px 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: #00ffcc; }
+        
+        .name { font-size: 2.4rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 15px; font-weight: 900; padding-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 1.4rem; border-bottom: 1px solid #222; }
+        .ex-name { color: #eee; font-weight: 500; }
+        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 12px; border-radius: 10px; border: 1px solid rgba(0, 255, 204, 0.3); }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="date" style="font-size: 1.2rem;">--/--</div>
+        <div id="date" style="font-size: 1.3rem; font-weight: bold; color: #888;">--/--</div>
         <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
-        <div id="time" style="font-size: 2.2rem; color: #00ffcc; font-weight: bold;">00:00:00</div>
+        <div id="time" style="font-size: 2.5rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
     </div>
     <div id="main-grid"></div>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
 
-        async function fetchData() {
+        async function updateBoard() {
             try {
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tcb=${Date.now()}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                const json = JSON.parse(text.substr(47).slice(0, -2));
-                const rows = json.table.rows;
+                const resp = await fetch(url);
+                const text = await resp.text();
+                const data = JSON.parse(text.substr(47).slice(0, -2));
+                const rows = data.table.rows;
                 
                 const grid = document.getElementById('main-grid');
-                const now = new Date();
-                const currentMin = now.getHours() * 60 + now.getMinutes();
+                grid.innerHTML = '';
                 
-                let allSessions = [];
-                let currentSession = null;
-
-                // שלב 1: איסוף כל האימונים מהגיליון
-                for (let i = 0; i < rows.length; i++) {
+                let count = 0;
+                for (let i = 0; i < rows.length && count < 6; i++) {
                     const row = rows[i].c;
                     if (!row || !row[0] || !row[0].v) continue;
-                    const cell = row[0].v.toString();
+                    
+                    const nameValue = row[0].v.toString();
+                    
+                    // מדלג על שורות כותרת או שורות זמן
+                    if (nameValue.includes("אימון") || nameValue.includes("מתאמנת")) continue;
 
-                    if (cell.includes("אימון")) {
-                        const m = cell.match(/(\d{1,2}):(\d{2})/);
-                        if (m) {
-                            currentSession = { 
-                                time: parseInt(m[1]) * 60 + parseInt(m[2]), 
-                                trainees: [] 
-                            };
-                            allSessions.push(currentSession);
+                    let html = `<div class="card"><div class="name">${nameValue}</div><div class="ex-list">`;
+                    
+                    // עובר על התרגילים (עמודות B, C, D וכו')
+                    for (let j = 1; j < row.length; j += 3) {
+                        if (row[j] && row[j].v) {
+                            const exName = row[j].v;
+                            const weight = (row[j+1] && row[j+1].v) ? row[j+1].v : "";
+                            const reps = (row[j+2] && row[j+2].v) ? row[j+2].v : "";
+                            html += `<div class="ex-row"><span class="ex-name">${exName} ${weight}</span><span class="reps">${reps}</span></div>`;
                         }
-                    } else if (currentSession && isNaN(cell) && cell !== "מתאמנת") {
-                        let t = { name: cell, ex: [] };
-                        for (let j = 1; j < row.length; j += 3) {
-                            if (row[j] && row[j].v) {
-                                t.ex.push({ n: row[j].v, w: (row[j+1]?row[j+1].v:""), r: (row[j+2]?row[j+2].v:"") });
-                            }
-                        }
-                        currentSession.trainees.push(t);
                     }
+                    
+                    grid.innerHTML += html + `</div></div>`;
+                    count++;
                 }
-
-                // שלב 2: בחירת האימון המתאים (זה שהכי קרוב לעכשיו)
-                let bestSession = allSessions.find(s => currentMin >= s.time - 20 && currentMin < s.time + 40);
-                
-                // אם לא מצאנו אימון בטווח של 20 דק' לפני, ניקח את זה שהתחיל לא מזמן
-                if (!bestSession) {
-                    bestSession = allSessions.reverse().find(s => currentMin >= s.time);
-                    allSessions.reverse(); // מחזירים סדר
-                }
-
-                grid.innerHTML = '';
-                if (bestSession && bestSession.trainees.length > 0) {
-                    bestSession.trainees.slice(0, 6).forEach(t => {
-                        let html = `<div class="card"><div class="name">${t.name}</div><div class="ex-list">`;
-                        t.ex.forEach(e => {
-                            html += `<div class="ex-row"><span>${e.n} ${e.w}</span><span class="reps">${e.r}</span></div>`;
-                        });
-                        grid.innerHTML += html + `</div></div>`;
-                    });
-                }
-                
-                document.getElementById('date').innerText = now.toLocaleDateString('he-IL');
-            } catch (e) { console.error(e); }
+            } catch (err) { console.error("Fetch error:", err); }
         }
 
-        setInterval(fetchData, 10000);
+        // עדכון נתונים כל 10 שניות
+        setInterval(updateBoard, 10000);
+        
+        // שעון רץ
         setInterval(() => {
             const n = new Date();
             document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
+            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {weekday: 'long', day: 'numeric', month: 'numeric'});
         }, 1000);
-        fetchData();
+        
+        updateBoard();
     </script>
 </body>
 </html>
