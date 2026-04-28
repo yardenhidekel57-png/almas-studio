@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Fixed Grid</title>
+    <title>Alma's Studio - Smooth Sync</title>
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
@@ -42,49 +42,55 @@
                 const now = new Date();
                 const currentMin = now.getHours() * 60 + now.getMinutes();
                 
-                let traineesData = [];
-                let isCapturing = false;
+                let allSessions = [];
+                let currentSession = null;
 
+                // שלב 1: איסוף כל האימונים מהגיליון
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i].c;
                     if (!row || !row[0] || !row[0].v) continue;
-                    
-                    const firstCell = row[0].v.toString();
-                    
-                    if (firstCell.includes("אימון")) {
-                        const timeMatch = firstCell.match(/(\d{1,2}):(\d{2})/);
-                        if (timeMatch) {
-                            const sTotal = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
-                            isCapturing = (currentMin >= sTotal - 20 && currentMin <= sTotal + 90);
-                        }
-                        continue;
-                    }
+                    const cell = row[0].v.toString();
 
-                    if (isCapturing && isNaN(firstCell) && firstCell !== "מתאמנת") {
-                        // בניית אובייקט למתאמנת
-                        let trainee = { name: firstCell, exercises: [] };
+                    if (cell.includes("אימון")) {
+                        const m = cell.match(/(\d{1,2}):(\d{2})/);
+                        if (m) {
+                            currentSession = { 
+                                time: parseInt(m[1]) * 60 + parseInt(m[2]), 
+                                trainees: [] 
+                            };
+                            allSessions.push(currentSession);
+                        }
+                    } else if (currentSession && isNaN(cell) && cell !== "מתאמנת") {
+                        let t = { name: cell, ex: [] };
                         for (let j = 1; j < row.length; j += 3) {
                             if (row[j] && row[j].v) {
-                                trainee.exercises.push({
-                                    name: row[j].v,
-                                    weight: (row[j+1] && row[j+1].v) ? row[j+1].v : "",
-                                    reps: (row[j+2] && row[j+2].v) ? row[j+2].v : ""
-                                });
+                                t.ex.push({ n: row[j].v, w: (row[j+1]?row[j+1].v:""), r: (row[j+2]?row[j+2].v:"") });
                             }
                         }
-                        traineesData.push(trainee);
+                        currentSession.trainees.push(t);
                     }
                 }
 
-                grid.innerHTML = '';
-                traineesData.slice(0, 6).forEach(t => {
-                    let html = `<div class="card"><div class="name">${t.name}</div><div class="ex-list">`;
-                    t.exercises.forEach(ex => {
-                        html += `<div class="ex-row"><span>${ex.name} ${ex.weight}</span><span class="reps">${ex.reps}</span></div>`;
-                    });
-                    grid.innerHTML += html + `</div></div>`;
-                });
+                // שלב 2: בחירת האימון המתאים (זה שהכי קרוב לעכשיו)
+                let bestSession = allSessions.find(s => currentMin >= s.time - 20 && currentMin < s.time + 40);
+                
+                // אם לא מצאנו אימון בטווח של 20 דק' לפני, ניקח את זה שהתחיל לא מזמן
+                if (!bestSession) {
+                    bestSession = allSessions.reverse().find(s => currentMin >= s.time);
+                    allSessions.reverse(); // מחזירים סדר
+                }
 
+                grid.innerHTML = '';
+                if (bestSession && bestSession.trainees.length > 0) {
+                    bestSession.trainees.slice(0, 6).forEach(t => {
+                        let html = `<div class="card"><div class="name">${t.name}</div><div class="ex-list">`;
+                        t.ex.forEach(e => {
+                            html += `<div class="ex-row"><span>${e.n} ${e.w}</span><span class="reps">${e.r}</span></div>`;
+                        });
+                        grid.innerHTML += html + `</div></div>`;
+                    });
+                }
+                
                 document.getElementById('date').innerText = now.toLocaleDateString('he-IL');
             } catch (e) { console.error(e); }
         }
