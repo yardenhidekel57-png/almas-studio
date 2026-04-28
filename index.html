@@ -2,17 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - 3 Column Layout</title>
+    <title>Alma's Studio - 5 Trainees View</title>
     <style>
         * { box-sizing: border-box; }
         html, body { 
             height: 100vh; margin: 0; overflow: hidden; 
             background-color: #050505; color: white;
-            font-family: system-ui, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         body { display: flex; flex-direction: column; padding: 15px; }
 
-        /* כותרת */
+        /* כותרת עליונה */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #111; padding: 0 30px; border-radius: 15px; 
@@ -20,44 +20,52 @@
             flex-shrink: 0; position: relative;
         }
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 2.5rem; color: #ffd700; font-weight: 900; }
-        .logo-sub { font-size: 0.8rem; color: #00ffcc; letter-spacing: 5px; display: block; }
+        .logo-main { font-size: 2.8rem; color: #ffd700; font-weight: 900; }
+        .logo-sub { font-size: 0.9rem; color: #00ffcc; letter-spacing: 5px; display: block; margin-top: -5px; }
 
-        /* גריד קשיח של 3 עמודות */
+        /* גריד קבוע של 3 עמודות - מושלם ל-5 או 6 מתאמנות */
         #main-grid { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); /* בדיוק 3 עמודות */
-            grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(2, 1fr);
             gap: 20px; 
             flex-grow: 1;
         }
 
-        /* כרטיסייה */
+        /* עיצוב כרטיסייה */
         .card { 
-            background: #161616; border: 1px solid #333; border-radius: 20px; 
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d); 
+            border: 1px solid #333; border-radius: 25px; 
             padding: 20px; display: flex; flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-height: 0;
         }
 
         .name { 
-            font-size: 2.2rem; color: #ffd700; text-align: center; 
-            border-bottom: 2px solid #444; margin-bottom: 15px; 
-            padding-bottom: 10px; font-weight: 900;
+            font-size: 2.4rem; color: #ffd700; text-align: center; 
+            border-bottom: 2px solid #444; margin-bottom: 12px; 
+            padding-bottom: 8px; font-weight: 900;
         }
 
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: start; }
+        .ex-list {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* מרכז את התרגילים אנכית */
+            overflow: hidden;
+        }
 
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.4rem; padding: 12px 0; border-bottom: 1px solid #222;
+            font-size: 1.4rem; padding: 8px 0; border-bottom: 1px solid #222;
         }
 
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 2px 12px; border-radius: 10px;
+            padding: 4px 12px; border-radius: 10px; border: 1px solid rgba(0, 255, 204, 0.2);
         }
         
-        .weight { color: #ff9f43; margin-right: 8px; font-size: 1.1rem; }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 5px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -74,7 +82,7 @@
     <div id="main-grid"></div>
 
     <script>
-        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
 
         function googleDocCallback(data) {
             if (!data || !data.table) return;
@@ -83,15 +91,18 @@
             grid.innerHTML = '';
 
             let count = 0;
+            // עובר על כל השורות בגיליון BOARD
             for (let i = 0; i < rows.length && count < 6; i++) {
                 const row = rows[i].c;
                 if (!row || !row[0] || !row[0].v) continue;
                 
                 const val = row[0].v.toString().trim();
+                // מדלג על שורות כותרת
                 if (val.includes("אימון") || val.includes("מתאמנת") || val === "") continue;
 
                 let html = `<div class="card"><div class="name">${val}</div><div class="ex-list">`;
                 
+                // שליפת תרגילים (קופץ ב-3 עמודות: שם, משקל, חזרות)
                 for (let j = 1; j < row.length; j += 3) {
                     const ex = row[j] ? row[j].v : '';
                     const weight = (row[j+1] && row[j+1].v) ? row[j+1].v : '';
@@ -112,11 +123,12 @@
 
         function refresh() {
             const s = document.createElement('script');
+            // מוודא משיכה מטאב BOARD (gid=0)
             s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:googleDocCallback&gid=0&tcb=${Date.now()}`;
             document.body.appendChild(s);
         }
 
-        setInterval(refresh, 10000);
+        setInterval(refresh, 10000); // רענון כל 10 שניות
         setInterval(() => {
             const now = new Date();
             document.getElementById('time').innerText = now.toLocaleTimeString('he-IL');
