@@ -2,92 +2,127 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Alma's Studio - Final Test</title>
+    <title>Alma's Studio - 3 Column Layout</title>
     <style>
         * { box-sizing: border-box; }
-        html, body { height: 100vh; margin: 0; overflow: hidden; background-color: #000; color: white; font-family: system-ui, sans-serif; }
-        body { display: flex; flex-direction: column; padding: 10px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0 30px; border-radius: 15px; border-bottom: 4px solid #00ffcc; height: 9vh; margin-bottom: 10px; position: relative; }
+        html, body { 
+            height: 100vh; margin: 0; overflow: hidden; 
+            background-color: #050505; color: white;
+            font-family: system-ui, sans-serif;
+        }
+        body { display: flex; flex-direction: column; padding: 15px; }
+
+        /* כותרת */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #111; padding: 0 30px; border-radius: 15px; 
+            border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px;
+            flex-shrink: 0; position: relative;
+        }
         .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; }
-        .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; display: block; }
-        #main-grid { display: grid; gap: 15px; flex-grow: 1; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
-        .card { background: #161616; border: 2px solid #333; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; }
-        .name { font-size: 2rem; color: #ffd700; text-align: center; border-bottom: 2px solid #444; margin-bottom: 10px; font-weight: 900; }
-        .ex-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 1.2rem; border-bottom: 1px solid #222; }
-        .reps { color: #00ffcc; font-weight: bold; }
-        #error-msg { color: #ff4444; position: fixed; bottom: 10px; left: 10px; font-size: 0.8rem; z-index: 100; }
+        .logo-main { font-size: 2.5rem; color: #ffd700; font-weight: 900; }
+        .logo-sub { font-size: 0.8rem; color: #00ffcc; letter-spacing: 5px; display: block; }
+
+        /* גריד קשיח של 3 עמודות */
+        #main-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); /* בדיוק 3 עמודות */
+            grid-template-rows: repeat(2, 1fr);    /* 2 שורות */
+            gap: 20px; 
+            flex-grow: 1;
+        }
+
+        /* כרטיסייה */
+        .card { 
+            background: #161616; border: 1px solid #333; border-radius: 20px; 
+            padding: 20px; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .name { 
+            font-size: 2.2rem; color: #ffd700; text-align: center; 
+            border-bottom: 2px solid #444; margin-bottom: 15px; 
+            padding-bottom: 10px; font-weight: 900;
+        }
+
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: start; }
+
+        .ex-row { 
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 1.4rem; padding: 12px 0; border-bottom: 1px solid #222;
+        }
+
+        .reps { 
+            color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
+            padding: 2px 12px; border-radius: 10px;
+        }
+        
+        .weight { color: #ff9f43; margin-right: 8px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
-    <div id="error-msg"></div>
+
     <div class="header">
-        <div id="date">--/--</div>
-        <div class="studio-logo"><span class="logo-main">Alma's</span><span class="logo-sub">STUDIO</span></div>
+        <div id="date" style="font-size: 1.5rem; color: #888;">--/--</div>
+        <div class="studio-logo">
+            <span class="logo-main">Alma's</span>
+            <span class="logo-sub">STUDIO</span>
+        </div>
         <div id="time" style="font-size: 2.5rem; color: #00ffcc; font-weight: 900;">00:00:00</div>
     </div>
+
     <div id="main-grid"></div>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
 
         function googleDocCallback(data) {
-            document.getElementById('error-msg').innerText = ""; // איפוס שגיאות
-            if (!data || !data.table || !data.table.rows) {
-                document.getElementById('error-msg').innerText = "שגיאה: הגיליון ריק או לא נגיש";
-                return;
-            }
-
+            if (!data || !data.table) return;
             const rows = data.table.rows;
             const grid = document.getElementById('main-grid');
             grid.innerHTML = '';
-            
-            let count = 0;
-            rows.forEach(r => {
-                if (count >= 6) return;
-                const row = r.c;
-                if (!row || !row[0] || !row[0].v) return;
-                
-                const name = row[0].v.toString().trim();
-                if (name.includes("אימון") || name.includes("מתאמנת") || name === "") return;
 
-                let html = `<div class="card"><div class="name">${name}</div><div>`;
+            let count = 0;
+            for (let i = 0; i < rows.length && count < 6; i++) {
+                const row = rows[i].c;
+                if (!row || !row[0] || !row[0].v) continue;
+                
+                const val = row[0].v.toString().trim();
+                if (val.includes("אימון") || val.includes("מתאמנת") || val === "") continue;
+
+                let html = `<div class="card"><div class="name">${val}</div><div class="ex-list">`;
+                
                 for (let j = 1; j < row.length; j += 3) {
-                    if (row[j] && row[j].v) {
-                        const ex = row[j].v;
-                        const w = (row[j+1] && row[j+1].v) ? row[j+1].v : "";
-                        const r = (row[j+2] && row[j+2].v) ? row[j+2].v : "";
-                        html += `<div class="ex-row"><span>${ex} ${w}</span><span class="reps">${r}</span></div>`;
+                    const ex = row[j] ? row[j].v : '';
+                    const weight = (row[j+1] && row[j+1].v) ? row[j+1].v : '';
+                    const reps = (row[j+2] && row[j+2].v) ? row[j+2].v : '';
+                    
+                    if (ex && ex !== "" && ex !== "...") {
+                        html += `<div class="ex-row">
+                                    <div><span>${ex}</span> <span class="weight">${weight}</span></div>
+                                    <span class="reps">${reps}</span>
+                                 </div>`;
                     }
                 }
-                grid.innerHTML += html + `</div></div>`;
+                html += `</div></div>`;
+                grid.innerHTML += html;
                 count++;
-            });
-
-            if (count === 0) {
-                document.getElementById('error-msg').innerText = "לא נמצאו מתאמנות בגיליון";
             }
         }
 
         function refresh() {
-            const oldScript = document.getElementById('gscript');
-            if (oldScript) oldScript.remove();
-
             const s = document.createElement('script');
-            s.id = 'gscript';
-            // שימוש ב-gid=0 כדי להבטיח משיכה מהטאב הראשון
             s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:googleDocCallback&gid=0&tcb=${Date.now()}`;
-            s.onerror = () => document.getElementById('error-msg').innerText = "שגיאת טעינה מגוגל";
             document.body.appendChild(s);
         }
 
         setInterval(refresh, 10000);
         setInterval(() => {
-            const n = new Date();
-            document.getElementById('time').innerText = n.toLocaleTimeString('he-IL');
-            document.getElementById('date').innerText = n.toLocaleDateString('he-IL', {day:'numeric', month:'numeric'});
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString('he-IL');
+            document.getElementById('date').innerText = now.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
         }, 1000);
-        
+
         refresh();
     </script>
 </body>
