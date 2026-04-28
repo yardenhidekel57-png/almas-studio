@@ -1,148 +1,70 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alma's Studio - 70 Min Sync</title>
-    <style>
-        * { box-sizing: border-box; }
-        html, body { 
-            height: 100vh; margin: 0; padding: 0;
-            overflow: hidden; 
-            background-color: #000; color: white;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        body { 
-            display: flex; flex-direction: column; 
-            height: 100vh;
-            padding: 10px;
-            padding-top: 80px; 
-        }
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #111; padding: 0 30px; border-radius: 15px; 
-            border-bottom: 4px solid #00ffcc; height: 10vh; margin-bottom: 15px;
-            flex-shrink: 0; position: relative;
-        }
-        .studio-logo { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
-        .logo-main { font-size: 2.2rem; color: #ffd700; font-weight: 900; letter-spacing: 2px; }
-        .logo-sub { font-size: 0.7rem; color: #00ffcc; letter-spacing: 4px; text-transform: uppercase; display: block; margin-top: -5px; }
-        #main-grid { 
-            display: grid; gap: 12px; flex-grow: 1; 
-            width: 100%;
-            grid-template-columns: repeat(3, 1fr); 
-            grid-template-rows: repeat(2, 1fr);    
-            padding-bottom: 10px;
-        }
-        .card { 
-            background: #161616; border: 2px solid #333; border-radius: 20px; 
-            padding: 12px; display: flex; flex-direction: column;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
-            min-height: 0; 
-        }
-        .name { 
-            font-size: clamp(1.4rem, 3.5vh, 2.2rem); color: #ffd700; 
-            text-align: center; border-bottom: 2px solid #444; 
-            margin-bottom: 8px; padding-bottom: 5px; font-weight: 900;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .ex-list {
-            flex-grow: 1; display: flex; flex-direction: column;
-            justify-content: flex-start; overflow-y: auto; scrollbar-width: none; 
-        }
-        .ex-list::-webkit-scrollbar { display: none; }
-        .ex-row { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: clamp(0.8rem, 2vh, 1.4rem); padding: 6px 0; border-bottom: 1px solid #222;
-        }
-        .ex-info { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
-        .weight {
-            color: #ff9f43; font-weight: bold; background: rgba(255, 159, 67, 0.1);
-            padding: 1px 6px; border-radius: 4px; font-size: 0.85em;
-        }
-        .reps { 
-            color: #00ffcc; font-weight: bold; background: rgba(0, 255, 204, 0.1); 
-            padding: 1px 10px; border-radius: 6px; flex-shrink: 0;
-        }
-    </style>
-</head>
-<body onclick="if(!document.fullscreenElement) document.documentElement.requestFullscreen();">
+function googleDocCallback(data) {
+    if (!data || !data.table) return;
+    const rows = data.table.rows;
+    const grid = document.getElementById('main-grid');
+    grid.innerHTML = '';
 
-    <div class="header">
-        <div id="date" style="font-size: 1.1rem;">--/--</div>
-        <div class="studio-logo">
-            <span class="logo-main">Alma's</span>
-            <span class="logo-sub">STUDIO</span>
-        </div>
-        <div id="time" style="font-size: 2rem; color: #00ffcc; font-weight: bold;">00:00:00</div>
-    </div>
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes(); // זמן נוכחי בדקות
 
-    <div id="main-grid"></div>
+    let targetSessionRows = [];
+    let currentScanningSession = "";
 
-    <script>
-        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
+    // שלב 1: מציאת האימון הרלוונטי לפי השעה
+    for (let i = 0; i < rows.length; i++) {
+        const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
+        
+        if (firstCell.includes("אימון")) {
+            const timeMatch = firstCell.match(/(\d{2}):(\d{2})/);
+            if (timeMatch) {
+                const sessionHour = parseInt(timeMatch[1]);
+                const sessionMin = parseInt(timeMatch[2]);
+                const sessionMinutes = sessionHour * 60 + sessionMin;
 
-        function googleDocCallback(data) {
-            if (!data || !data.table) return;
-            const rows = data.table.rows;
-            const grid = document.getElementById('main-grid');
-            grid.innerHTML = '';
-
-            const now = new Date();
-            const currentTimeValue = now.getHours() * 100 + now.getMinutes();
-
-            let targetSessionRows = [];
-            let currentScanningSession = "";
-
-            for (let i = 0; i < rows.length; i++) {
-                const firstCell = rows[i].c[0] ? rows[i].c[0].v.toString().trim() : "";
-                if (firstCell.includes("אימון")) {
-                    const sessionTimeNum = parseInt(firstCell.replace(/[^0-9]/g, ""));
-                    // טווח של 45 דקות לפני ועד 70 דקות אחרי
-                    if (currentTimeValue >= (sessionTimeNum - 45) && currentTimeValue < (sessionTimeNum + 70)) {
-                        currentScanningSession = firstCell;
-                        targetSessionRows = []; 
-                    } else { currentScanningSession = ""; }
-                    continue; 
-                }
-                if (currentScanningSession !== "" && firstCell !== "" && isNaN(firstCell)) {
-                    targetSessionRows.push(rows[i]);
-                }
-            }
-
-            if (targetSessionRows.length > 0) {
-                targetSessionRows.slice(0, 6).forEach(row => {
-                    const name = row.c[0].v;
-                    let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
-                    for (let j = 1; j < row.c.length; j += 3) {
-                        const ex = row.c[j] ? row.c[j].v : '';
-                        const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
-                        const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
-                        if (ex && ex !== "" && ex !== "...") {
-                            html += `<div class="ex-row"><div class="ex-info"><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
-                        }
+                // בדיקה אם זה האימון האחרון בגיליון
+                let isLast = true;
+                for (let k = i + 1; k < rows.length; k++) {
+                    if (rows[k].c[0] && rows[k].c[0].v.toString().includes("אימון")) {
+                        isLast = false;
+                        break;
                     }
-                    html += `</div></div>`;
-                    grid.innerHTML += html;
-                });
+                }
+
+                // תנאי תצוגה: 10 דקות לפני, ועד שהבא מתחיל (או 70 דק' אם זה האחרון)
+                const startTime = sessionMinutes - 10;
+                const endTime = isLast ? sessionMinutes + 70 : sessionMinutes + 60; // הנחה שאימון רגיל מתחלף אחרי שעה
+
+                if (currentMinutes >= startTime && currentMinutes < endTime) {
+                    currentScanningSession = firstCell;
+                    targetSessionRows = []; 
+                } else {
+                    currentScanningSession = "";
+                }
             }
+            continue; 
         }
 
-        function refresh() {
-            const s = document.createElement('script');
-            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:googleDocCallback&gid=0&tcb=${Date.now()}`;
-            document.body.appendChild(s);
+        // שלב 2: איסוף המתאמנות של האימון שנמצא
+        if (currentScanningSession !== "" && firstCell !== "" && isNaN(firstCell)) {
+            targetSessionRows.push(rows[i]);
         }
+    }
 
-        function clock() {
-            const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-            document.getElementById('date').innerText = now.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
-        }
-
-        setInterval(refresh, 10000); 
-        setInterval(clock, 1000);
-        refresh(); clock();
-    </script>
-</body>
-</html>
+    // שלב 3: הצגה על המסך
+    if (targetSessionRows.length > 0) {
+        targetSessionRows.slice(0, 6).forEach(row => {
+            const name = row.c[0].v;
+            let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
+            for (let j = 1; j < row.c.length; j += 3) {
+                const ex = row.c[j] ? row.c[j].v : '';
+                const weight = (row.c[j+1] && row.c[j+1].v) ? row.c[j+1].v : '';
+                const reps = (row.c[j+2] && row.c[j+2].v) ? row.c[j+2].v : '-';
+                if (ex && ex !== "" && ex !== "...") {
+                    html += `<div class="ex-row"><div class="ex-info"><span>${ex}</span> ${weight ? `<span class="weight">${weight}</span>` : ''}</div><span class="reps">${reps}</span></div>`;
+                }
+            }
+            html += `</div></div>`;
+            grid.innerHTML += html;
+        });
+    }
+}
