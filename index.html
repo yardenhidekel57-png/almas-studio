@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alma's Studio - Adaptive Display</title>
+    <title>STUDIO ALMA - Adaptive Display</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { 
@@ -13,13 +13,14 @@
         }
         body { display: flex; flex-direction: column; padding: 1vh; }
 
+        /* כותרת מעודכנת */
         .header { 
             height: 8vh; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 3vw; border-bottom: 0.4vh solid #00ffcc; border-radius: 1.5vh;
+            padding: 0 3vw; border-bottom: 0.4vh solid #ff6600; border-radius: 1.5vh;
             margin-bottom: 1vh; flex-shrink: 0;
         }
-        .logo-main { font-size: 3.5vh; color: #ffd700; font-weight: 900; }
+        .logo-main { font-size: 4vh; color: #ff6600; font-weight: 900; letter-spacing: 2px; }
         #time { font-size: 4vh; color: #00ffcc; font-weight: 900; }
 
         #container {
@@ -31,7 +32,7 @@
 
         .row {
             display: flex;
-            height: 43vh; /* גובה חצי מסך פחות כותרת */
+            height: 43vh; 
             gap: 1.5vw;
             justify-content: center;
         }
@@ -43,31 +44,30 @@
             max-width: 31vw;
         }
 
+        /* שמות מתאמנות בכתום */
         .name { 
-            font-size: 3.2vh; color: #ffd700; text-align: center; 
+            font-size: 3.5vh; color: #ff6600; text-align: center; 
             border-bottom: 0.2vh solid #444; margin-bottom: 1vh; font-weight: 900;
             flex-shrink: 0;
         }
 
-        /* רשימת תרגילים גמישה - Flex 1 גורם להם להתחלק בשטח שנותר */
         .ex-list { 
             flex-grow: 1; 
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* מותח את התרגילים לכל גובה הכרטיסייה */
+            justify-content: space-between; 
             min-height: 0;
         }
 
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid #222;
-            flex: 1; /* כל שורה מקבלת חלק שווה מהגובה */
+            flex: 1; 
             min-height: 0;
         }
 
-        /* טקסט תרגיל שיקטן אם יש הרבה שורות */
         .ex-text {
-            font-size: clamp(1.2vh, 2.2vh, 3vh); 
+            font-size: clamp(1.2vh, 2.3vh, 3.2vh); 
             font-weight: 500;
             overflow: hidden;
             white-space: nowrap;
@@ -88,7 +88,7 @@
 
     <div class="header">
         <div id="date" style="font-size: 2vh; color: #888;">--/--</div>
-        <div class="logo-main">Alma's STUDIO</div>
+        <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
 
@@ -116,7 +116,6 @@
 
                 let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
                 
-                // ספירת תרגילים כדי לדעת כמה לצופף
                 let exercises = [];
                 for (let j = 1; j < r.length; j += 3) {
                     const ex = r[j] ? r[j].v : '';
@@ -129,7 +128,6 @@
                     }
                 }
 
-                // יצירת השורות - גודל הפונט יושפע אוטומטית מכמות האלמנטים בתוך ה-Flex
                 exercises.forEach(item => {
                     html += `<div class="ex-row">
                                 <div class="ex-text"><span>${item.title}</span><span class="weight">${item.w}</span></div>
