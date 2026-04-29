@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STUDIO ALMA - Live Schedule</title>
+    <title>STUDIO ALMA - Dynamic Layout</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { 
@@ -23,47 +23,58 @@
         #time { font-size: 4.5vh; color: #00ffcc; font-weight: 900; }
         #training-info { font-size: 2.5vh; color: #ff6600; font-weight: bold; }
 
-        #container { height: 88vh; display: flex; flex-direction: column; gap: 1.5vh; }
-        .row { display: flex; height: 43vh; gap: 1.5vw; justify-content: center; }
+        /* מיכל גמיש שמתאים את עצמו לכמות הכרטיסיות */
+        #container { 
+            height: 88vh; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 1.5vh 1.5vw; 
+            justify-content: center; 
+            align-content: center;
+        }
 
         .card { 
             background: #161616; border: 0.2vh solid #333; border-radius: 2vh; 
-            display: flex; flex-direction: column; flex: 1;
-            padding: 1.5vh; overflow: hidden; max-width: 31vw;
+            display: flex; flex-direction: column; 
+            padding: 1.5vh; overflow: hidden;
+            transition: all 0.3s ease;
         }
 
+        /* הגדרות רוחב דינמיות */
+        .w-100 { flex: 0 0 96vw; height: 86vh; } /* מתאמנת אחת */
+        .w-50 { flex: 0 0 47vw; height: 86vh; }  /* שתי מתאמנות */
+        .w-33 { flex: 0 0 31vw; height: 86vh; }  /* שלוש מתאמנות */
+        .w-grid { flex: 0 0 47vw; height: 42vh; } /* ארבע מתאמנות */
+        .w-6-grid { flex: 0 0 31vw; height: 42vh; } /* חמש-שש מתאמנות */
+
         .name { 
-            font-size: 3.8vh; color: #ff6600; text-align: center; 
+            font-size: 4vh; color: #ff6600; text-align: center; 
             border-bottom: 0.2vh solid #444; margin-bottom: 0.8vh; font-weight: 900;
             flex-shrink: 0; padding-bottom: 0.5vh;
         }
 
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
         .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; flex: 1; min-height: 0; }
-        .ex-text { font-size: clamp(1.2vh, 2.4vh, 3.5vh); font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 0.3vh 1.2vw; border-radius: 0.8vh; border: 0.15vh solid #00ffcc; font-size: clamp(1.2vh, 2.1vh, 3vh); min-width: 6.5vw; text-align: center; }
+        .ex-text { font-size: clamp(1.4vh, 2.6vh, 4vh); font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 0.3vh 1.2vw; border-radius: 0.8vh; border: 0.15vh solid #00ffcc; font-size: clamp(1.4vh, 2.2vh, 3.5vh); min-width: 6.5vw; text-align: center; }
         .weight { color: #ff9f43; font-weight: bold; font-size: 0.85em; margin-right: 0.8vw; }
         
-        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 6vh; color: #333; font-weight: 900; text-transform: uppercase; }
+        .status-msg { font-size: 6vh; color: #333; font-weight: 900; text-align: center; width: 100%; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div id="training-info">מזהה אימון...</div>
+        <div id="training-info">STUDIO ALMA</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
 
-    <div id="container">
-        <div class="row" id="row-1"></div>
-        <div class="row" id="row-2"></div>
-    </div>
+    <div id="container"></div>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
 
-        // המרת טקסט מהגיליון (למשל 18:00) לאובייקט זמן של היום
         function parseSheetTime(str) {
             const match = str.match(/(\d{1,2}):(\d{2})/);
             if (!match) return null;
@@ -76,103 +87,83 @@
             if (!data || !data.table) return;
             const rows = data.table.rows;
             const now = new Date();
-            
             let sessions = [];
             let currentSession = null;
 
-            // סריקת הגיליון וחלוקה לבלוקים של אימונים
             for (let i = 0; i < rows.length; i++) {
                 const cellVal = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
                 if (typeof cellVal === 'string' && cellVal.includes("אימון")) {
                     if (currentSession) sessions.push(currentSession);
-                    currentSession = { 
-                        time: parseSheetTime(cellVal), 
-                        title: cellVal, 
-                        trainees: [] 
-                    };
+                    currentSession = { time: parseSheetTime(cellVal), title: cellVal, trainees: [] };
                 } else if (currentSession && cellVal && cellVal !== "מתאמנת") {
                     currentSession.trainees.push(rows[i].c);
                 }
             }
             if (currentSession) sessions.push(currentSession);
 
-            // בחירת האימון הנכון להצגה לפי חוקי הזמן שלך
             let activeSession = null;
-
             for (let i = 0; i < sessions.length; i++) {
                 const s = sessions[i];
                 const nextS = sessions[i+1];
-                const start = s.time;
-                if (!start) continue;
-
+                if (!s.time) continue;
                 if (i === 0) {
-                    // אימון ראשון: 30 דק' לפני ועד הבא
-                    const preWindow = new Date(start.getTime() - 30 * 60000);
-                    const endLimit = nextS ? nextS.time : new Date(start.getTime() + 70 * 60000);
-                    if (now >= preWindow && now < endLimit) activeSession = s;
-                } 
-                else if (i === sessions.length - 1) {
-                    // אימון אחרון: מההתחלה ועד 70 דק' אחרי
-                    const postWindow = new Date(start.getTime() + 70 * 60000);
-                    if (now >= start && now < postWindow) activeSession = s;
-                }
-                else {
-                    // אימון אמצע: מההתחלה ועד האימון הבא (דריסה)
-                    if (now >= start && now < nextS.time) activeSession = s;
+                    const pre = new Date(s.time.getTime() - 30 * 60000);
+                    const end = nextS ? nextS.time : new Date(s.time.getTime() + 70 * 60000);
+                    if (now >= pre && now < end) activeSession = s;
+                } else if (i === sessions.length - 1) {
+                    if (now >= s.time && now < new Date(s.time.getTime() + 70 * 60000)) activeSession = s;
+                } else if (now >= s.time && now < nextS.time) {
+                    activeSession = s;
                 }
             }
-
             renderView(activeSession);
         }
 
         function renderView(session) {
-            const r1 = document.getElementById('row-1');
-            const r2 = document.getElementById('row-2');
+            const container = document.getElementById('container');
             const info = document.getElementById('training-info');
-            
             if (!session) {
-                r1.innerHTML = '<div class="status-msg">STUDIO ALMA - מחוץ לשעות הפעילות</div>';
-                r2.innerHTML = '';
-                info.innerText = 'ממתין לאימון הבא';
+                container.innerHTML = '<div class="status-msg">מחוץ לשעות הפעילות</div>';
+                info.innerText = 'ממתין לאימון';
                 return;
             }
 
             info.innerText = session.title;
-            r1.innerHTML = ''; r2.innerHTML = '';
-            
-            session.trainees.slice(0, 6).forEach((trainee, idx) => {
+            const count = session.trainees.length;
+            let layoutClass = 'w-6-grid';
+            if (count === 1) layoutClass = 'w-100';
+            else if (count === 2) layoutClass = 'w-50';
+            else if (count === 3) layoutClass = 'w-33';
+            else if (count === 4) layoutClass = 'w-grid';
+
+            container.innerHTML = session.trainees.map(trainee => {
                 const name = trainee[0] ? trainee[0].v : "מתאמנת";
-                let html = `<div class="card"><div class="name">${name}</div><div class="ex-list">`;
-                
+                let exercisesHtml = "";
                 for (let j = 1; j < trainee.length; j += 3) {
                     const ex = trainee[j] ? trainee[j].v : '';
                     if (ex && ex !== "" && ex !== "...") {
-                        const weight = (trainee[j+1] && trainee[j+1].v) ? trainee[j+1].v : '';
-                        const reps = (trainee[j+2] && trainee[j+2].v) ? trainee[j+2].v : '';
-                        html += `<div class="ex-row">
-                                    <div class="ex-text"><span>${ex}</span><span class="weight">${weight}</span></div>
-                                    <div class="reps">${reps}</div>
-                                 </div>`;
+                        const w = (trainee[j+1] && trainee[j+1].v) ? trainee[j+1].v : '';
+                        const r = (trainee[j+2] && trainee[j+2].v) ? trainee[j+2].v : '';
+                        exercisesHtml += `<div class="ex-row">
+                            <div class="ex-text"><span>${ex}</span><span class="weight">${w}</span></div>
+                            <div class="reps">${r}</div>
+                        </div>`;
                     }
                 }
-                html += `</div></div>`;
-                
-                if (idx < 3) r1.innerHTML += html;
-                else r2.innerHTML += html;
-            });
+                return `<div class="card ${layoutClass}"><div class="name">${name}</div><div class="ex-list">${exercisesHtml}</div></div>`;
+            }).join('');
         }
 
         function refresh() {
-            const script = document.createElement('script');
-            script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
-            document.head.appendChild(script);
-            script.onload = () => script.remove();
+            const s = document.createElement('script');
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
+            document.head.appendChild(s);
+            s.onload = () => s.remove();
         }
 
         setInterval(refresh, 10000);
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString('he-IL', {hour12:false});
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
         }, 1000);
         refresh();
     </script>
