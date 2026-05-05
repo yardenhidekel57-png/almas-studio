@@ -5,68 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>STUDIO ALMA</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
         html, body { 
             height: 100%; width: 100%; overflow: hidden; 
             background-color: #050505; color: white;
             font-family: Arial, sans-serif;
         }
-        body { display: flex; flex-direction: column; padding: 5px; }
+        body { display: flex; flex-direction: column; padding: 4px; }
 
         .header { 
-            height: 50px; background: #111; display: flex; 
+            height: 45px; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 20px; border-bottom: 3px solid #ff6600; border-radius: 8px;
-            margin-bottom: 8px; flex-shrink: 0; position: relative;
+            padding: 0 15px; border-bottom: 3px solid #ff6600; border-radius: 8px;
+            margin-bottom: 6px; flex-shrink: 0; position: relative;
         }
         
         .logo-main { 
-            font-size: 30px; color: #ff6600; font-weight: 900; 
+            font-size: 28px; color: #ff6600; font-weight: 900; 
             position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
         
-        #time { font-size: 28px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 18px; color: #ff6600; font-weight: bold; }
+        #time { font-size: 26px; color: #00ffcc; font-weight: 900; }
+        #training-info { font-size: 16px; color: #ff6600; font-weight: bold; }
 
-        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-        .row { display: flex; flex: 1; gap: 8px; justify-content: center; align-items: stretch; max-height: 47%; overflow: hidden; }
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+        .row { display: flex; flex: 1; gap: 6px; justify-content: center; align-items: stretch; max-height: 48%; overflow: hidden; }
 
         .card { 
-            background: #161616; border: 1.5px solid #333; border-radius: 12px; 
-            display: flex; flex-direction: column; flex: 1; padding: 8px; 
+            background: #161616; border: 1.5px solid #333; border-radius: 10px; 
+            display: flex; flex-direction: column; flex: 1; padding: 6px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden;
         }
 
         .name { 
-            font-size: 28px; color: #ff6600; text-align: center; 
-            border-bottom: 1.5px solid #444; margin-bottom: 5px; font-weight: 900;
-            padding-bottom: 3px; line-height: 1;
+            font-size: 24px; color: #ff6600; text-align: center; 
+            border-bottom: 1.5px solid #444; margin-bottom: 4px; font-weight: 900;
+            padding-bottom: 2px;
         }
 
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+        /* רשימת תרגילים צפופה במיוחד */
+        .ex-list { 
+            flex-grow: 1; display: flex; flex-direction: column; 
+            justify-content: flex-start; height: 100%;
+        }
         
-        /* צמצום משמעותי של גובה השורה */
         .ex-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid #222; padding: 3px 0;
-            min-height: 0;
+            border-bottom: 1px solid #222; padding: 2px 0;
+            margin: 0; height: 16%; /* מבטיח שגם 6 שורות יכנסו */
         }
 
         .ex-text { 
-            font-size: 20px; font-weight: 700; white-space: nowrap; 
+            font-size: 18px; font-weight: 700; white-space: nowrap; 
             overflow: hidden; text-overflow: ellipsis; max-width: 65%;
-            line-height: 1.1;
         }
         
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 2px 8px; border-radius: 5px; border: 1.5px solid #00ffcc; 
-            font-size: 18px; min-width: 80px; text-align: center; 
+            padding: 1px 6px; border-radius: 4px; border: 1.2px solid #00ffcc; 
+            font-size: 16px; min-width: 75px; text-align: center; 
         }
         
-        .weight { color: #ff9f43; font-weight: bold; font-size: 16px; margin-right: 5px; }
-        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 40px; color: #444; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 14px; margin-right: 4px; }
+        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 35px; color: #444; }
     </style>
 </head>
 <body>
@@ -115,10 +117,7 @@
                 if (!s.time) continue;
                 var startTime = s.time;
                 var endTime = nextS ? nextS.time : new Date(s.time.getTime() + 60 * 60000);
-                if (now >= startTime && now < endTime) {
-                    activeSession = s;
-                    break;
-                }
+                if (now >= startTime && now < endTime) { activeSession = s; break; }
             }
             renderView(activeSession);
         }
@@ -126,20 +125,16 @@
         function renderView(session) {
             var container = document.getElementById('container');
             var info = document.getElementById('training-info');
-            
             if (!session || session.trainees.length === 0) {
                 container.innerHTML = '<div class="status-msg">אין אימון פעיל</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
-
             info.innerText = session.title;
             var trainees = session.trainees;
             container.innerHTML = '';
-
             var numTrainees = trainees.length;
             var maxPerRow = numTrainees <= 3 ? numTrainees : Math.ceil(numTrainees / 2);
-            
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
 
@@ -149,11 +144,9 @@
                     rowDiv = document.createElement('div');
                     rowDiv.className = 'row';
                 }
-
                 var trainee = trainees[k];
                 var name = trainee[0] ? trainee[0].v : "מתאמנת";
                 var exercisesHtml = "";
-                
                 for (var m = 1; m < trainee.length; m += 3) {
                     var ex = (trainee[m] && trainee[m].v) ? trainee[m].v : '';
                     if (ex && ex !== "" && ex !== "...") {
@@ -165,7 +158,6 @@
                         '</div>';
                     }
                 }
-
                 var card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = '<div class="name">' + name + '</div><div class="ex-list">' + exercisesHtml + '</div>';
@@ -181,12 +173,10 @@
             document.head.appendChild(s);
             s.onload = function() { if (s.parentNode) s.parentNode.removeChild(s); };
         }
-
         setInterval(refresh, 10000);
         setInterval(function() {
             document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
         }, 1000);
-        
         refresh();
     </script>
 </body>
