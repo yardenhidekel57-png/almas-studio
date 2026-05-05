@@ -11,51 +11,54 @@
             background-color: #050505; color: white;
             font-family: Arial, sans-serif;
         }
-        body { display: flex; flex-direction: column; padding: 10px; }
+        body { display: flex; flex-direction: column; padding: 5px; }
 
         .header { 
-            height: 80px; background: #111; display: flex; 
+            height: 60px; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 30px; border-bottom: 5px solid #ff6600; border-radius: 10px;
-            margin-bottom: 15px; flex-shrink: 0; position: relative;
+            padding: 0 20px; border-bottom: 4px solid #ff6600; border-radius: 8px;
+            margin-bottom: 10px; flex-shrink: 0; position: relative;
         }
         
         .logo-main { 
-            font-size: 45px; color: #ff6600; font-weight: 900; 
+            font-size: 35px; color: #ff6600; font-weight: 900; 
             position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
         
-        #time { font-size: 40px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 24px; color: #ff6600; font-weight: bold; }
+        #time { font-size: 30px; color: #00ffcc; font-weight: 900; }
+        #training-info { font-size: 20px; color: #ff6600; font-weight: bold; }
 
-        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
-        .row { display: flex; flex: 1; gap: 15px; justify-content: center; align-items: stretch; max-height: 45%; }
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+        /* הגבלה קשיחה של גובה השורה כדי למנוע חיתוך */
+        .row { display: flex; flex: 1; gap: 10px; justify-content: center; align-items: stretch; max-height: 46%; }
 
         .card { 
-            background: #161616; border: 2px solid #333; border-radius: 20px; 
-            display: flex; flex-direction: column; flex: 1; padding: 15px; 
+            background: #161616; border: 2px solid #333; border-radius: 15px; 
+            display: flex; flex-direction: column; flex: 1; padding: 10px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.5); overflow: hidden;
         }
 
         .name { 
-            font-size: 38px; color: #ff6600; text-align: center; 
-            border-bottom: 2px solid #444; margin-bottom: 10px; font-weight: 900;
-            padding-bottom: 5px;
+            font-size: 32px; color: #ff6600; text-align: center; 
+            border-bottom: 2px solid #444; margin-bottom: 8px; font-weight: 900;
+            padding-bottom: 4px; line-height: 1.1;
         }
 
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around; }
-        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 5px 0; }
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 4px 0; }
 
-        .ex-text { font-size: 28px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        /* הקטנת פונט התרגיל כדי למנוע "שבירת שורות" שדוחפת הכל למטה */
+        .ex-text { font-size: 24px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
+        
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 5px 15px; border-radius: 8px; border: 2px solid #00ffcc; 
-            font-size: 26px; min-width: 80px; text-align: center; 
+            padding: 4px 12px; border-radius: 6px; border: 2px solid #00ffcc; 
+            font-size: 22px; min-width: 90px; text-align: center; 
         }
         
-        .weight { color: #ff9f43; font-weight: bold; font-size: 20px; margin-right: 10px; }
-        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 60px; color: #444; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 18px; margin-right: 8px; }
+        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 50px; color: #444; }
     </style>
 </head>
 <body>
