@@ -121,7 +121,11 @@
                 const cellVal = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
                 if (typeof cellVal === 'string' && cellVal.includes("אימון")) {
                     if (currentSession) sessions.push(currentSession);
-                    currentSession = { time: parseSheetTime(cellVal), title: cellVal, trainees: [] };
+                    currentSession = { 
+                        time: parseSheetTime(cellVal), 
+                        title: cellVal, 
+                        trainees: [] 
+                    };
                 } else if (currentSession && cellVal && cellVal !== "מתאמנת") {
                     currentSession.trainees.push(rows[i].c);
                 }
@@ -135,7 +139,7 @@
                 if (!s.time) continue;
 
                 const startTime = s.time;
-                // הצגה של בדיוק שעה אחת (60 דקות) מתחילת האימון
+                // זמן סיום: 60 דקות מההתחלה, או עד שהאימון הבא מתחיל
                 const endTime = nextS ? nextS.time : new Date(s.time.getTime() + 60 * 60000);
 
                 if (now >= startTime && now < endTime) {
@@ -180,28 +184,39 @@
                     if (ex && ex !== "" && ex !== "...") {
                         const w = (trainee[j+1] && trainee[j+1].v) ? trainee[j+1].v : '';
                         const r = (trainee[j+2] && trainee[j+2].v) ? trainee[j+2].v : '';
-                        exercisesHtml += `<div class="ex-row">
-                            <div class="ex-text"><span>${ex}</span><span class="weight">${w}</span></div>
-                            <div class="reps">${r}</div>
-                        </div>`;
+                        exercisesHtml += `
+                            <div class="ex-row">
+                                <div class="ex-text">
+                                    <span>${ex}</span>
+                                    <span class="weight">${w}</span>
+                                </div>
+                                <div class="reps">${r}</div>
+                            </div>`;
                     }
                 }
-                rowDiv.innerHTML += `<div class="card"><div class="name">${name}</div><div class="ex-list">${exercisesHtml}</div></div>`;
+                rowDiv.innerHTML += `
+                    <div class="card">
+                        <div class="name">${name}</div>
+                        <div class="ex-list">${exercisesHtml}</div>
+                    </div>`;
             });
             container.appendChild(rowDiv);
         }
 
         function refresh() {
             const s = document.createElement('script');
-            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
+            const now = Date.now();
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${now}`;
             document.head.appendChild(s);
             s.onload = () => s.remove();
         }
 
         setInterval(refresh, 10000);
         setInterval(() => {
-            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString('he-IL', {hour12:false});
         }, 1000);
+        
         refresh();
     </script>
 </body>
