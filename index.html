@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STUDIO ALMA - 50 Inch Optimized</title>
+    <title>STUDIO ALMA - LIVE BOARD</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { 
@@ -14,79 +14,46 @@
         body { display: flex; flex-direction: column; padding: 1.5vh; }
 
         .header { 
-            height: 8vh; background: #111; display: flex; 
+            height: 9vh; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 3vw; border-bottom: 0.5vh solid #ff6600; border-radius: 1.5vh;
+            padding: 0 3vw; border-bottom: 0.6vh solid #ff6600; border-radius: 1.5vh;
             margin-bottom: 1.5vh; flex-shrink: 0;
         }
-        .logo-main { font-size: 4.5vh; color: #ff6600; font-weight: 900; letter-spacing: 2px; }
-        #time { font-size: 4.5vh; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 2.8vh; color: #ff6600; font-weight: bold; }
+        .logo-main { font-size: 5vh; color: #ff6600; font-weight: 900; letter-spacing: 2px; }
+        #time { font-size: 5vh; color: #00ffcc; font-weight: 900; }
+        #training-info { font-size: 3vh; color: #ff6600; font-weight: bold; }
 
-        #container { 
-            flex-grow: 1;
-            display: flex; 
-            flex-direction: column;
-            gap: 2vh;
-        }
-
-        .row {
-            display: flex;
-            flex: 1;
-            gap: 2vw;
-            justify-content: center;
-            align-items: stretch;
-        }
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 2vh; }
+        .row { display: flex; flex: 1; gap: 2vw; justify-content: center; align-items: stretch; }
 
         .card { 
             background: #161616; border: 0.3vh solid #333; border-radius: 2.5vh; 
-            display: flex; flex-direction: column; 
-            flex: 1; 
-            padding: 2.5vh; 
-            overflow: hidden;
-            box-shadow: 0 1vh 3vh rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; flex: 1; padding: 2.5vh; 
+            overflow: hidden; box-shadow: 0 1vh 3vh rgba(0,0,0,0.5);
         }
 
         .name { 
-            font-size: 5vh; color: #ff6600; text-align: center; 
+            font-size: 5.5vh; color: #ff6600; text-align: center; 
             border-bottom: 0.3vh solid #444; margin-bottom: 1.5vh; font-weight: 900;
-            flex-shrink: 0; padding-bottom: 1vh;
+            padding-bottom: 1vh; flex-shrink: 0;
         }
 
-        .ex-list { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-evenly; 
-            min-height: 0; 
-        }
-
-        .ex-row { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid #222; 
-            padding: 1vh 0;
-            min-height: 0; 
-        }
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 1.2vh 0; }
 
         .ex-text { 
-            font-size: clamp(2vh, 3.5vh, 5vh); 
-            font-weight: 700; 
-            overflow: hidden; 
-            white-space: nowrap; 
-            text-overflow: ellipsis; 
-            max-width: 70%;
+            font-size: clamp(2.5vh, 3.8vh, 5.5vh); font-weight: 700; 
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 72%;
         }
 
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
             padding: 0.8vh 2vw; border-radius: 1.2vh; border: 0.2vh solid #00ffcc; 
-            font-size: clamp(2vh, 3vh, 4.5vh); 
-            min-width: 8vw; text-align: center; 
+            font-size: clamp(2.5vh, 3.5vh, 5vh); min-width: 9vw; text-align: center; 
         }
         
-        .weight { color: #ff9f43; font-weight: bold; font-size: 0.8em; margin-right: 1vw; }
-        
-        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 6vh; color: #444; font-weight: 900; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 0.85em; margin-right: 1.5vw; }
+        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 7vh; color: #444; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -121,11 +88,7 @@
                 const cellVal = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
                 if (typeof cellVal === 'string' && cellVal.includes("אימון")) {
                     if (currentSession) sessions.push(currentSession);
-                    currentSession = { 
-                        time: parseSheetTime(cellVal), 
-                        title: cellVal, 
-                        trainees: [] 
-                    };
+                    currentSession = { time: parseSheetTime(cellVal), title: cellVal, trainees: [] };
                 } else if (currentSession && cellVal && cellVal !== "מתאמנת") {
                     currentSession.trainees.push(rows[i].c);
                 }
@@ -139,7 +102,7 @@
                 if (!s.time) continue;
 
                 const startTime = s.time;
-                // זמן סיום: 60 דקות מההתחלה, או עד שהאימון הבא מתחיל
+                // הצגה בדיוק לשעה אחת כפי שביקשת
                 const endTime = nextS ? nextS.time : new Date(s.time.getTime() + 60 * 60000);
 
                 if (now >= startTime && now < endTime) {
@@ -180,16 +143,13 @@
                 const name = trainee[0] ? trainee[0].v : "מתאמנת";
                 let exercisesHtml = "";
                 for (let j = 1; j < trainee.length; j += 3) {
-                    const ex = trainee[j] ? trainee[j].v : '';
+                    const ex = (trainee[j] && trainee[j].v) ? trainee[j].v : '';
                     if (ex && ex !== "" && ex !== "...") {
                         const w = (trainee[j+1] && trainee[j+1].v) ? trainee[j+1].v : '';
                         const r = (trainee[j+2] && trainee[j+2].v) ? trainee[j+2].v : '';
                         exercisesHtml += `
                             <div class="ex-row">
-                                <div class="ex-text">
-                                    <span>${ex}</span>
-                                    <span class="weight">${w}</span>
-                                </div>
+                                <div class="ex-text"><span>${ex}</span><span class="weight">${w}</span></div>
                                 <div class="reps">${r}</div>
                             </div>`;
                     }
@@ -205,18 +165,15 @@
 
         function refresh() {
             const s = document.createElement('script');
-            const now = Date.now();
-            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${now}`;
+            s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=${Date.now()}`;
             document.head.appendChild(s);
             s.onload = () => s.remove();
         }
 
         setInterval(refresh, 10000);
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString('he-IL', {hour12:false});
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
         }, 1000);
-        
         refresh();
     </script>
 </body>
