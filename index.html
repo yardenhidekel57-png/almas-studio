@@ -14,51 +14,59 @@
         body { display: flex; flex-direction: column; padding: 5px; }
 
         .header { 
-            height: 60px; background: #111; display: flex; 
+            height: 50px; background: #111; display: flex; 
             justify-content: space-between; align-items: center; 
-            padding: 0 20px; border-bottom: 4px solid #ff6600; border-radius: 8px;
-            margin-bottom: 10px; flex-shrink: 0; position: relative;
+            padding: 0 20px; border-bottom: 3px solid #ff6600; border-radius: 8px;
+            margin-bottom: 8px; flex-shrink: 0; position: relative;
         }
         
         .logo-main { 
-            font-size: 35px; color: #ff6600; font-weight: 900; 
+            font-size: 30px; color: #ff6600; font-weight: 900; 
             position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
         
-        #time { font-size: 30px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 20px; color: #ff6600; font-weight: bold; }
+        #time { font-size: 28px; color: #00ffcc; font-weight: 900; }
+        #training-info { font-size: 18px; color: #ff6600; font-weight: bold; }
 
-        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-        /* הגבלה קשיחה של גובה השורה כדי למנוע חיתוך */
-        .row { display: flex; flex: 1; gap: 10px; justify-content: center; align-items: stretch; max-height: 46%; }
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .row { display: flex; flex: 1; gap: 8px; justify-content: center; align-items: stretch; max-height: 47%; overflow: hidden; }
 
         .card { 
-            background: #161616; border: 2px solid #333; border-radius: 15px; 
-            display: flex; flex-direction: column; flex: 1; padding: 10px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); overflow: hidden;
+            background: #161616; border: 1.5px solid #333; border-radius: 12px; 
+            display: flex; flex-direction: column; flex: 1; padding: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden;
         }
 
         .name { 
-            font-size: 32px; color: #ff6600; text-align: center; 
-            border-bottom: 2px solid #444; margin-bottom: 8px; font-weight: 900;
-            padding-bottom: 4px; line-height: 1.1;
+            font-size: 28px; color: #ff6600; text-align: center; 
+            border-bottom: 1.5px solid #444; margin-bottom: 5px; font-weight: 900;
+            padding-bottom: 3px; line-height: 1;
         }
 
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 4px 0; }
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+        
+        /* צמצום משמעותי של גובה השורה */
+        .ex-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid #222; padding: 3px 0;
+            min-height: 0;
+        }
 
-        /* הקטנת פונט התרגיל כדי למנוע "שבירת שורות" שדוחפת הכל למטה */
-        .ex-text { font-size: 24px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
+        .ex-text { 
+            font-size: 20px; font-weight: 700; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; max-width: 65%;
+            line-height: 1.1;
+        }
         
         .reps { 
             color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 4px 12px; border-radius: 6px; border: 2px solid #00ffcc; 
-            font-size: 22px; min-width: 90px; text-align: center; 
+            padding: 2px 8px; border-radius: 5px; border: 1.5px solid #00ffcc; 
+            font-size: 18px; min-width: 80px; text-align: center; 
         }
         
-        .weight { color: #ff9f43; font-weight: bold; font-size: 18px; margin-right: 8px; }
-        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 50px; color: #444; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 16px; margin-right: 5px; }
+        .status-msg { display: flex; justify-content: center; align-items: center; height: 100%; font-size: 40px; color: #444; }
     </style>
 </head>
 <body>
