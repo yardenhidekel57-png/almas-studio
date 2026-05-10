@@ -3,155 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STUDIO ALMA TV - V2</title>
+    <title>STUDIO ALMA - EMERGENCY FIX</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.05; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; padding: 2px; }
-        .header { height: 45px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; position: relative; }
-        .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .header { height: 45px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; }
+        .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; }
         #time { font-size: 24px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 16px; color: #ff6600; font-weight: bold; }
+        #training-info { font-size: 18px; color: #ff6600; font-weight: bold; }
         #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-        .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 47%; }
-        .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; overflow: hidden; }
-        .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
-        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
-        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; height: 16%; padding: 0; }
-        .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
-        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 5px; border-radius: 4px; border: 1.5px solid #00ffcc; font-size: 15px; min-width: 70px; text-align: center; }
-        .weight { color: #ff9f43; font-weight: bold; font-size: 13px; margin-right: 3px; }
+        .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 48%; }
+        .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; }
+        .name { font-size: 22px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 5px; font-weight: 900; }
+        .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 2px 0; }
+        .ex-text { font-size: 18px; font-weight: 700; color: #eee; }
+        .reps { color: #00ffcc; font-weight: 900; border: 1.5px solid #00ffcc; padding: 2px 6px; border-radius: 4px; font-size: 16px; min-width: 70px; text-align: center; }
+        .weight { color: #ff9f43; font-weight: bold; margin-right: 5px; font-size: 14px; }
         .footer-credit { height: 20px; font-size: 14px; color: #ff6600; text-align: left; padding: 0 15px; font-family: monospace; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">מתחבר לגיליון...</div>
+        <div id="training-info">מעדכן...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
-    <div id="container">
-        <div style="text-align:center;font-size:20px;margin-top:15%;color:#555;">טוען נתונים...</div>
-    </div>
+    <div id="container"></div>
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
-        var SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
+        var SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        // פנייה ישירה לקובץ CSV - הכי אמין שיש
+        var CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=0';
 
-        function handleSheetData(data) {
-            if (!data || !data.table) {
-                document.getElementById('training-info').innerText = "שגיאה במשיכת נתונים";
-                return;
-            }
-            var rows = data.table.rows;
-            var now = new Date();
-            var nowMin = (now.getHours() * 60) + now.getMinutes();
-            var sessions = [];
-            var currentSession = null;
+        function parseCSV(text) {
+            var lines = text.split('\n');
+            return lines.map(line => {
+                // טיפול בגרשיים שגוגל מוסיף ב-CSV
+                return line.split(',').map(cell => cell.replace(/^"|"$/g, '').trim());
+            });
+        }
 
-            for (var i = 0; i < rows.length; i++) {
-                var cell = (rows[i].c && rows[i].c[0]) ? String(rows[i].c[0].v) : "";
-                if (cell.indexOf("אימון") !== -1) {
-                    var timeMatch = cell.match(/(\d{1,2}):(\d{2})/);
-                    if (timeMatch) {
-                        var sMin = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
-                        if (currentSession) sessions.push(currentSession);
-                        currentSession = { start: sMin, title: cell, trainees: [] };
+        async function updateDashboard() {
+            try {
+                const response = await fetch(CSV_URL + '&cache=' + Date.now());
+                const text = await response.text();
+                const rows = parseCSV(text);
+                
+                var now = new Date();
+                var nowMin = (now.getHours() * 60) + now.getMinutes();
+                var sessions = [];
+                var currentSession = null;
+
+                for (var i = 0; i < rows.length; i++) {
+                    var cellA = rows[i][0];
+                    if (cellA && cellA.includes("אימון")) {
+                        var timeMatch = cellA.match(/(\d{1,2}):(\d{2})/);
+                        if (timeMatch) {
+                            var sMin = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
+                            if (currentSession) sessions.push(currentSession);
+                            currentSession = { start: sMin, title: cellA, trainees: [] };
+                        }
+                    } else if (currentSession && cellA && cellA !== "מתאמנת" && cellA !== "") {
+                        currentSession.trainees.push(rows[i]);
                     }
-                } else if (currentSession && cell && cell !== "מתאמנת" && cell !== "null") {
-                    currentSession.trainees.push(rows[i].c);
                 }
-            }
-            if (currentSession) sessions.push(currentSession);
+                if (currentSession) sessions.push(currentSession);
 
-            var active = null;
-            // בחירת אימון שמתקיים עכשיו (התחיל ב-90 הדקות האחרונות)
-            for (var j = 0; j < sessions.length; j++) {
-                var s = sessions[j];
-                if (nowMin >= s.start && nowMin < (s.start + 90)) {
-                    active = s; 
-                }
-            }
-
-            // אם אין אימון פעיל, מציג אימון שמתחיל ב-10 דקות הקרובות
-            if (!active) {
+                // בחירת האימון המתאים (נוכחי או זה שהתחיל לא מזמן)
+                var active = null;
                 for (var j = 0; j < sessions.length; j++) {
-                    if (nowMin >= (sessions[j].start - 10) && nowMin < sessions[j].start) {
+                    // מציג אימון שהתחיל עד לפני 90 דקות
+                    if (nowMin >= sessions[j].start && nowMin < (sessions[j].start + 90)) {
                         active = sessions[j];
-                        break;
                     }
                 }
-            }
+                
+                // אם אין אימון שרץ עכשיו, מראה את הבא בטווח של 10 דקות
+                if (!active) {
+                    for (var j = 0; j < sessions.length; j++) {
+                        if (nowMin >= (sessions[j].start - 10) && nowMin < sessions[j].start) {
+                            active = sessions[j];
+                            break;
+                        }
+                    }
+                }
 
+                render(active);
+            } catch (e) {
+                document.getElementById('training-info').innerText = "שגיאת חיבור";
+            }
+        }
+
+        function render(active) {
             var container = document.getElementById('container');
             var info = document.getElementById('training-info');
-            
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#444;">אין אימון פעיל כרגע</div>';
-                info.innerText = 'הפסקה';
+                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:15%;color:#444;">ממתין לאימון הבא</div>';
+                info.innerText = "הפסקה";
                 return;
             }
-
             info.innerText = active.title;
             container.innerHTML = '';
+            
             var trainees = active.trainees;
-            if (trainees.length === 0) {
-                container.innerHTML = '<div style="text-align:center;font-size:20px;margin-top:15%;color:#555;">אין מתאמנות רשומות לאימון זה</div>';
-                return;
-            }
-
-            var max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
+            var maxPerRow = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
 
-            for (var k = 0; k < trainees.length; k++) {
-                if (k > 0 && k % max === 0) {
+            trainees.forEach((t, index) => {
+                if (index > 0 && index % maxPerRow === 0) {
                     container.appendChild(rowDiv);
                     rowDiv = document.createElement('div');
                     rowDiv.className = 'row';
                 }
-                var t = trainees[k];
                 var exHtml = "";
                 for (var m = 1; m < t.length; m += 3) {
-                    var ex = (t[m] && t[m].v) ? t[m].v : '';
-                    if (ex && ex !== "..." && ex !== "null") {
-                        var w = (t[m+1] && t[m+1].v) ? t[m+1].v : '';
-                        var r = (t[m+2] && t[m+2].v) ? t[m+2].v : '';
-                        exHtml += '<div class="ex-row"><div class="ex-text"><span>'+ex+'</span><span class="weight">'+w+'</span></div><div class="reps">'+r+'</div></div>';
+                    var ex = t[m] || "";
+                    if (ex && ex !== "...") {
+                        var w = t[m+1] || "";
+                        var r = t[m+2] || "";
+                        exHtml += `<div class="ex-row"><div class="ex-text"><span>${ex}</span><span class="weight">${w}</span></div><div class="reps">${r}</div></div>`;
                     }
                 }
                 var card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = '<div class="name">'+(t[0]?t[0].v:"")+'</div><div class="ex-list">'+exHtml+'</div>';
+                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exHtml}</div>`;
                 rowDiv.appendChild(card);
-            }
+            });
             container.appendChild(rowDiv);
         }
 
-        function refresh() {
-            // הסרת סקריפטים ישנים כדי למנוע כפילויות
-            var oldScript = document.getElementById('sheet-script');
-            if (oldScript) oldScript.parentNode.removeChild(oldScript);
-
-            var s = document.createElement('script');
-            s.id = 'sheet-script';
-            // הוספת Timestamp משתנה בכל רענון כדי לעקוף את ה-Cache של הטלוויזיה ושל גוגל
-            s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleSheetData&gid=0&tcb=' + Date.now();
-            document.head.appendChild(s);
-        }
-
-        // רענון נתונים בכל 15 שניות
-        setInterval(refresh, 15000);
-        
-        // עדכון שעון בכל שניה
-        setInterval(function() {
+        setInterval(updateDashboard, 15000);
+        setInterval(() => {
             var d = new Date();
-            var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
-            document.getElementById('time').innerText = (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+            document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
         }, 1000);
-
-        // הפעלה ראשונית
-        refresh();
+        updateDashboard();
     </script>
 </body>
 </html>
