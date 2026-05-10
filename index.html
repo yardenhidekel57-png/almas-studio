@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STUDIO ALMA - BULLETPROOF</title>
+    <title>STUDIO ALMA - STRICT TIME</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
@@ -71,7 +71,19 @@
             });
             if (current) sessions.push(current);
 
-            let active = sessions.find(s => nowMin >= (s.start - 10) && nowMin < (s.start + 60));
+            // בחירת אימון - לוגיקה קשיחה לפי שעות
+            let active = null;
+            
+            for (let i = 0; i < sessions.length; i++) {
+                const s = sessions[i];
+                // האימון מוצג מהרגע שהוא מתחיל ועד 55 דקות קדימה
+                // הוספתי "חלון הכנה" של 2 דקות בלבד לפני הזמן הרשמי
+                if (nowMin >= (s.start - 2) && nowMin < (s.start + 55)) {
+                    active = s;
+                    break; // ברגע שמצאנו את האימון שרץ עכשיו, עוצרים
+                }
+            }
+
             render(active);
         }
 
@@ -79,8 +91,8 @@
             const container = document.getElementById('container');
             const info = document.getElementById('training-info');
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">הפסקה</div>';
-                info.innerText = "סטודיו אלמה";
+                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">הפסקה - ממתין לאימון הבא</div>';
+                info.innerText = "סטודיו עלמה";
                 return;
             }
             info.innerText = active.title;
@@ -99,18 +111,15 @@
                 }
                 
                 let exs = "";
-                // עיבוד חכם - לא מסתמך על מיקום קבוע
                 for (let m = 1; m < t.length; m++) {
                     let val = t[m] || "";
                     if (val === "" || val === "..." || val === "null") continue;
 
-                    // אם זה נראה כמו תרגיל (טקסט ארוך)
                     if (val.length > 4 || (!val.includes('.') && !val.includes(',') && !val.toLowerCase().includes('k'))) {
                         let name = val;
                         let weight = "";
                         let reps = "";
 
-                        // בודק את 2 התאים הבאים כדי למצוא משקל וחזרות
                         for(let k=1; k<=2; k++) {
                             let next = (t[m+k] || "").toLowerCase();
                             if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) {
@@ -121,15 +130,10 @@
                         }
 
                         reps = reps.replace(/,/g, 'x').replace(/\./g, 'x');
-                        
-                        exs += `<div class="ex-row">
-                            <div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div>
-                            <div class="reps">${reps || '--'}</div>
-                        </div>`;
-                        m += 2; // מדלג על תאי הנתונים של התרגיל הנוכחי
+                        exs += `<div class="ex-row"><div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div><div class="reps">${reps || '--'}</div></div>`;
+                        m += 2;
                     }
                 }
-                
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`;
