@@ -16,18 +16,18 @@
         #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 47%; }
         .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; overflow: hidden; }
-        .name { font-size: 22px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
+        .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
         .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; height: 16%; padding: 0; }
-        .ex-text { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
-        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 6px; border-radius: 4px; border: 1.5px solid #00ffcc; font-size: 16px; min-width: 75px; text-align: center; }
-        .weight { color: #ff9f43; font-weight: bold; font-size: 14px; margin-right: 4px; }
-        .footer-credit { height: 20px; font-size: 11px; color: #555; text-align: left; padding: 0 10px; font-family: Arial; }
+        .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
+        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 5px; border-radius: 4px; border: 1.5px solid #00ffcc; font-size: 15px; min-width: 70px; text-align: center; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 13px; margin-right: 3px; }
+        .footer-credit { height: 18px; font-size: 11px; color: #444; text-align: left; padding: 0 10px; font-family: Arial; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">מתחבר לגיליון...</div>
+        <div id="training-info">מעדכן נתונים...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
@@ -46,31 +46,38 @@
             var currentSession = null;
 
             for (var i = 0; i < rows.length; i++) {
-                var cell = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
-                if (typeof cell === 'string' && cell.indexOf("אימון") !== -1) {
+                var cell = (rows[i].c && rows[i].c[0]) ? String(rows[i].c[0].v) : "";
+                if (cell.indexOf("אימון") !== -1) {
                     var timeMatch = cell.match(/(\d{1,2}):(\d{2})/);
                     if (timeMatch) {
                         var sMin = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
                         if (currentSession) sessions.push(currentSession);
                         currentSession = { start: sMin, title: cell, trainees: [] };
                     }
-                } else if (currentSession && cell && cell !== "מתאמנת") {
+                } else if (currentSession && cell && cell !== "מתאמנת" && cell !== "null") {
                     currentSession.trainees.push(rows[i].c);
                 }
             }
             if (currentSession) sessions.push(currentSession);
 
+            // לוגיקה חדשה: מוצאים את האימון האחרון שזמן ההתחלה שלו עבר או הגיע ממש עכשיו
             var active = null;
             for (var j = 0; j < sessions.length; j++) {
                 var s = sessions[j];
-                var next = sessions[j+1];
-                // מציג 60 דקות לפני ועד 120 דקות אחרי (או עד האימון הבא)
-                var startLimit = s.start - 60;
-                var endLimit = next ? next.start : s.start + 120;
+                // אם זמן האימון הגיע (או עבר בטווח של 90 דקות), הוא נחשב פעיל
+                if (nowMin >= s.start && nowMin < (s.start + 90)) {
+                    active = s; 
+                }
+            }
 
-                if (nowMin >= startLimit && nowMin < endLimit) {
-                    active = s;
-                    break;
+            // אם אין אימון שהתחיל ממש עכשיו, נבדוק אם יש אימון שמתחיל ב-15 דקות הקרובות
+            if (!active) {
+                for (var j = 0; j < sessions.length; j++) {
+                    var s = sessions[j];
+                    if (nowMin >= (s.start - 15) && nowMin < s.start) {
+                        active = s;
+                        break;
+                    }
                 }
             }
 
@@ -78,7 +85,7 @@
             var info = document.getElementById('training-info');
             
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#666;">לא נמצא אימון פעיל בטווח השעות הקרוב</div>';
+                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#555;">ממתין לתחילת האימון...</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
@@ -102,7 +109,7 @@
                 var exHtml = "";
                 for (var m = 1; m < t.length; m += 3) {
                     var ex = (t[m] && t[m].v) ? t[m].v : '';
-                    if (ex && ex !== "...") {
+                    if (ex && ex !== "..." && ex !== "null") {
                         var w = (t[m+1] && t[m+1].v) ? t[m+1].v : '';
                         var r = (t[m+2] && t[m+2].v) ? t[m+2].v : '';
                         exHtml += '<div class="ex-row"><div class="ex-text"><span>'+ex+'</span><span class="weight">'+w+'</span></div><div class="reps">'+r+'</div></div>';
