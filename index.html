@@ -3,68 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- מונע מהדפדפן לשמור את הדף בזיכרון -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>STUDIO ALMA TV</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
-        html, body { 
-            height: 100%; width: 100%; overflow: hidden; 
-            background-color: #000; color: white;
-            font-family: Arial, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.05; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; padding: 2px; }
-
-        .header { 
-            height: 40px; background: #111; display: flex; 
-            justify-content: space-between; align-items: center; 
-            padding: 0 15px; border-bottom: 3px solid #ff6600;
-            margin-bottom: 5px; flex-shrink: 0; position: relative;
-        }
-        
-        .logo-main { 
-            font-size: 26px; color: #ff6600; font-weight: 900; 
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        }
-        
+        .header { height: 40px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; position: relative; }
+        .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
         #time { font-size: 24px; color: #00ffcc; font-weight: 900; }
         #training-info { font-size: 14px; color: #ff6600; font-weight: bold; }
-
-        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
-        .row { display: flex; flex: 1; gap: 5px; justify-content: center; align-items: stretch; max-height: 48%; }
-
-        .card { 
-            background: #111; border: 1.5px solid #222; border-radius: 8px; 
-            display: flex; flex-direction: column; flex: 1; padding: 5px; overflow: hidden;
-        }
-
-        .name { 
-            font-size: 22px; color: #ff6600; text-align: center; 
-            border-bottom: 1.5px solid #333; margin-bottom: 3px; font-weight: 900;
-        }
-
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 48%; }
+        .card { background: #111; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; flex: 1; padding: 4px; overflow: hidden; }
+        .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 1.5px solid #333; margin-bottom: 2px; font-weight: 900; }
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
-        
-        .ex-row { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid #222; padding: 1px 0;
-            height: 15.5%; /* מבטיח שגם 6 תרגילים יכנסו */
-        }
-
-        .ex-text { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
-        
-        .reps { 
-            color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); 
-            padding: 1px 5px; border-radius: 3px; border: 1px solid #00ffcc; 
-            font-size: 15px; min-width: 70px; text-align: center; 
-        }
-        
-        .weight { color: #ff9f43; font-weight: bold; font-size: 13px; margin-right: 3px; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; height: 16%; padding: 0; }
+        .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
+        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 1px 4px; border-radius: 3px; border: 1px solid #00ffcc; font-size: 14px; min-width: 65px; text-align: center; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 12px; margin-right: 2px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">טוען...</div>
+        <div id="training-info">טוען נתונים...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
@@ -98,14 +59,15 @@
             for (var j = 0; j < sessions.length; j++) {
                 var s = sessions[j];
                 var next = sessions[j+1];
-                var end = next ? next.time : new Date(s.time.getTime() + 60*60000);
+                // שונה ל-120 דקות (שעתיים) כדי למנוע מצב של מסך שחור בין אימונים
+                var end = next ? next.time : new Date(s.time.getTime() + 120 * 60000);
                 if (now >= s.time && now < end) { active = s; break; }
             }
 
             var container = document.getElementById('container');
             var info = document.getElementById('training-info');
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:20%;">אין אימון</div>';
+                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:20%;">אין אימון פעיל כרגע</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
@@ -113,8 +75,8 @@
             info.innerText = active.title;
             container.innerHTML = '';
             var trainees = active.trainees;
-            var max = Math.ceil(trainees.length / 2);
-            if (trainees.length <= 3) max = trainees.length;
+            var num = trainees.length;
+            var max = num <= 3 ? num : Math.ceil(num / 2);
 
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
