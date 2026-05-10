@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STUDIO ALMA - STRICT TIME</title>
+    <title>STUDIO ALMA - EXACT TIME</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
@@ -31,7 +31,7 @@
 </head>
 <body>
     <div class="header">
-        <div id="training-info">טוען...</div>
+        <div id="training-info">מעדכן...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
@@ -71,16 +71,25 @@
             });
             if (current) sessions.push(current);
 
-            // בחירת אימון - לוגיקה קשיחה לפי שעות
+            // לוגיקת החלפה מדויקת:
+            // 1. מחפשים אם יש אימון שמתחיל ממש עכשיו (בטווח של 60 הדקות הקרובות)
+            // 2. אם לא, מציגים את האימון האחרון שהתחיל ב-60 הדקות האחרונות
             let active = null;
             
             for (let i = 0; i < sessions.length; i++) {
-                const s = sessions[i];
-                // האימון מוצג מהרגע שהוא מתחיל ועד 55 דקות קדימה
-                // הוספתי "חלון הכנה" של 2 דקות בלבד לפני הזמן הרשמי
-                if (nowMin >= (s.start - 2) && nowMin < (s.start + 55)) {
+                let s = sessions[i];
+                let nextS = sessions[i+1];
+                
+                // אם השעה הנוכחית היא בין תחילת האימון הזה לתחילת האימון הבא
+                if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) {
+                    // מציג אותו רק אם לא עברו יותר מ-65 דקות מתחילתו (כדי שלא יתקע בלילה)
+                    if (nowMin < s.start + 65) {
+                        active = s;
+                    }
+                }
+                // אם האימון עומד להתחיל ב-10 דקות הקרובות
+                else if (nowMin >= s.start - 10 && nowMin < s.start) {
                     active = s;
-                    break; // ברגע שמצאנו את האימון שרץ עכשיו, עוצרים
                 }
             }
 
@@ -91,14 +100,14 @@
             const container = document.getElementById('container');
             const info = document.getElementById('training-info');
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">הפסקה - ממתין לאימון הבא</div>';
-                info.innerText = "סטודיו עלמה";
+                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">אין אימון פעיל כרגע</div>';
+                info.innerText = "סטודיו אלמה";
                 return;
             }
             info.innerText = active.title;
             container.innerHTML = '';
             
-            const trainees = active.trainees;
+            const trainees = active.trainees.filter(t => t[0]);
             const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
             let rowDiv = document.createElement('div');
             rowDiv.className = 'row';
