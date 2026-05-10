@@ -3,33 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>STUDIO ALMA TV</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.05; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; padding: 2px; }
-        .header { height: 40px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; position: relative; }
-        .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        
+        .header { 
+            height: 45px; background: #111; display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; 
+            margin-bottom: 5px; flex-shrink: 0; position: relative; 
+        }
+        
+        .logo-main { 
+            font-size: 26px; color: #ff6600; font-weight: 900; 
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
+        }
+        
         #time { font-size: 24px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 14px; color: #ff6600; font-weight: bold; }
+        #training-info { font-size: 16px; color: #ff6600; font-weight: bold; }
+        
         #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-        .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 48%; }
+        .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 47%; }
+        
         .card { background: #111; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; flex: 1; padding: 4px; overflow: hidden; }
         .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 1.5px solid #333; margin-bottom: 2px; font-weight: 900; }
+        
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
         .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; height: 16%; padding: 0; }
+        
         .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
         .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 1px 4px; border-radius: 3px; border: 1px solid #00ffcc; font-size: 14px; min-width: 65px; text-align: center; }
         .weight { color: #ff9f43; font-weight: bold; font-size: 12px; margin-right: 2px; }
+
+        .footer-credit {
+            height: 20px; font-size: 12px; color: #444; text-align: left; padding-left: 10px; font-family: monospace;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">טוען נתונים...</div>
+        <div id="training-info">טוען...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
+    
     <div id="container"></div>
+    
+    <div class="footer-credit">Developed by Gal E</div>
 
     <script>
         var SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
@@ -37,7 +59,7 @@
         function handleData(data) {
             if (!data || !data.table) return;
             var rows = data.table.rows;
-            var now = new Date();
+            var now = new Date().getTime();
             var sessions = [];
             var currentSession = null;
 
@@ -46,9 +68,11 @@
                 if (typeof cellVal === 'string' && cellVal.indexOf("אימון") !== -1) {
                     var match = cellVal.match(/(\d{1,2}):(\d{2})/);
                     var d = new Date();
-                    if (match) d.setHours(parseInt(match[1]), parseInt(match[2]), 0, 0);
+                    if (match) {
+                        d.setHours(parseInt(match[1]), parseInt(match[2]), 0, 0);
+                    }
                     if (currentSession) sessions.push(currentSession);
-                    currentSession = { time: d, title: cellVal, trainees: [] };
+                    currentSession = { time: d.getTime(), title: cellVal, trainees: [] };
                 } else if (currentSession && cellVal && cellVal !== "מתאמנת") {
                     currentSession.trainees.push(rows[i].c);
                 }
@@ -59,15 +83,22 @@
             for (var j = 0; j < sessions.length; j++) {
                 var s = sessions[j];
                 var next = sessions[j+1];
-                // שונה ל-120 דקות (שעתיים) כדי למנוע מצב של מסך שחור בין אימונים
-                var end = next ? next.time : new Date(s.time.getTime() + 120 * 60000);
-                if (now >= s.time && now < end) { active = s; break; }
+                
+                // לוגיקה גמישה: מתחיל להראות חצי שעה לפני, ומסיים שעתיים אחרי (או כשמתחיל הבא)
+                var displayStart = s.time - (30 * 60000); 
+                var displayEnd = next ? next.time : (s.time + (120 * 60000));
+
+                if (now >= displayStart && now < displayEnd) {
+                    active = s;
+                    break;
+                }
             }
 
             var container = document.getElementById('container');
             var info = document.getElementById('training-info');
+            
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:20%;">אין אימון פעיל כרגע</div>';
+                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:15%;color:#444;">אין אימון פעיל כרגע</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
@@ -75,8 +106,7 @@
             info.innerText = active.title;
             container.innerHTML = '';
             var trainees = active.trainees;
-            var num = trainees.length;
-            var max = num <= 3 ? num : Math.ceil(num / 2);
+            var max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
 
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
@@ -109,7 +139,7 @@
             var s = document.createElement('script');
             s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=' + new Date().getTime();
             document.head.appendChild(s);
-            s.onload = function() { s.parentNode.removeChild(s); };
+            s.onload = function() { if (s.parentNode) s.parentNode.removeChild(s); };
         }
 
         setInterval(refresh, 10000);
