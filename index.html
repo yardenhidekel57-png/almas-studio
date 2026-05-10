@@ -71,7 +71,7 @@
             });
             if (current) sessions.push(current);
 
-            let active = sessions.find(s => nowMin >= (s.start - 10) && nowMin < (s.start + 90));
+            let active = sessions.find(s => nowMin >= (s.start - 10) && nowMin < (s.start + 60));
             render(active);
         }
 
