@@ -9,48 +9,29 @@
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.05; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; padding: 2px; }
-        
-        .header { 
-            height: 45px; background: #111; display: flex; justify-content: space-between; 
-            align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; 
-            margin-bottom: 5px; flex-shrink: 0; position: relative; 
-        }
-        
-        .logo-main { 
-            font-size: 26px; color: #ff6600; font-weight: 900; 
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
-        }
-        
+        .header { height: 45px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; position: relative; }
+        .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
         #time { font-size: 24px; color: #00ffcc; font-weight: 900; }
         #training-info { font-size: 16px; color: #ff6600; font-weight: bold; }
-        
         #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 47%; }
-        
-        .card { background: #111; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; flex: 1; padding: 4px; overflow: hidden; }
-        .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 1.5px solid #333; margin-bottom: 2px; font-weight: 900; }
-        
+        .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; overflow: hidden; }
+        .name { font-size: 22px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
         .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; height: 16%; padding: 0; }
-        
-        .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
-        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 1px 4px; border-radius: 3px; border: 1px solid #00ffcc; font-size: 14px; min-width: 65px; text-align: center; }
-        .weight { color: #ff9f43; font-weight: bold; font-size: 12px; margin-right: 2px; }
-
-        .footer-credit {
-            height: 20px; font-size: 12px; color: #444; text-align: left; padding-left: 10px; font-family: monospace;
-        }
+        .ex-text { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
+        .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 6px; border-radius: 4px; border: 1.5px solid #00ffcc; font-size: 16px; min-width: 75px; text-align: center; }
+        .weight { color: #ff9f43; font-weight: bold; font-size: 14px; margin-right: 4px; }
+        .footer-credit { height: 20px; font-size: 11px; color: #555; text-align: left; padding: 0 10px; font-family: Arial; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">טוען...</div>
+        <div id="training-info">מתחבר לגיליון...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
-    
     <div id="container"></div>
-    
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
@@ -59,21 +40,21 @@
         function handleData(data) {
             if (!data || !data.table) return;
             var rows = data.table.rows;
-            var now = new Date().getTime();
+            var now = new Date();
+            var nowMin = (now.getHours() * 60) + now.getMinutes();
             var sessions = [];
             var currentSession = null;
 
             for (var i = 0; i < rows.length; i++) {
-                var cellVal = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
-                if (typeof cellVal === 'string' && cellVal.indexOf("אימון") !== -1) {
-                    var match = cellVal.match(/(\d{1,2}):(\d{2})/);
-                    var d = new Date();
-                    if (match) {
-                        d.setHours(parseInt(match[1]), parseInt(match[2]), 0, 0);
+                var cell = (rows[i].c && rows[i].c[0]) ? rows[i].c[0].v : "";
+                if (typeof cell === 'string' && cell.indexOf("אימון") !== -1) {
+                    var timeMatch = cell.match(/(\d{1,2}):(\d{2})/);
+                    if (timeMatch) {
+                        var sMin = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
+                        if (currentSession) sessions.push(currentSession);
+                        currentSession = { start: sMin, title: cell, trainees: [] };
                     }
-                    if (currentSession) sessions.push(currentSession);
-                    currentSession = { time: d.getTime(), title: cellVal, trainees: [] };
-                } else if (currentSession && cellVal && cellVal !== "מתאמנת") {
+                } else if (currentSession && cell && cell !== "מתאמנת") {
                     currentSession.trainees.push(rows[i].c);
                 }
             }
@@ -83,12 +64,11 @@
             for (var j = 0; j < sessions.length; j++) {
                 var s = sessions[j];
                 var next = sessions[j+1];
-                
-                // לוגיקה גמישה: מתחיל להראות חצי שעה לפני, ומסיים שעתיים אחרי (או כשמתחיל הבא)
-                var displayStart = s.time - (30 * 60000); 
-                var displayEnd = next ? next.time : (s.time + (120 * 60000));
+                // מציג 60 דקות לפני ועד 120 דקות אחרי (או עד האימון הבא)
+                var startLimit = s.start - 60;
+                var endLimit = next ? next.start : s.start + 120;
 
-                if (now >= displayStart && now < displayEnd) {
+                if (nowMin >= startLimit && nowMin < endLimit) {
                     active = s;
                     break;
                 }
@@ -98,7 +78,7 @@
             var info = document.getElementById('training-info');
             
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:15%;color:#444;">אין אימון פעיל כרגע</div>';
+                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#666;">לא נמצא אימון פעיל בטווח השעות הקרוב</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
@@ -106,8 +86,9 @@
             info.innerText = active.title;
             container.innerHTML = '';
             var trainees = active.trainees;
-            var max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
+            if (trainees.length === 0) return;
 
+            var max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
 
@@ -137,14 +118,16 @@
 
         function refresh() {
             var s = document.createElement('script');
-            s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=' + new Date().getTime();
+            s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=' + Date.now();
             document.head.appendChild(s);
             s.onload = function() { if (s.parentNode) s.parentNode.removeChild(s); };
         }
 
         setInterval(refresh, 10000);
         setInterval(function() {
-            document.getElementById('time').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
+            var d = new Date();
+            var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+            document.getElementById('time').innerText = (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
         }, 1000);
         refresh();
     </script>
