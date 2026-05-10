@@ -3,30 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STUDIO ALMA - EMERGENCY FIX</title>
+    <title>STUDIO ALMA - BULLETPROOF</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
         body { display: flex; flex-direction: column; padding: 2px; }
         .header { height: 45px; background: #111; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 3px solid #ff6600; margin-bottom: 5px; flex-shrink: 0; }
         .logo-main { font-size: 26px; color: #ff6600; font-weight: 900; }
         #time { font-size: 24px; color: #00ffcc; font-weight: 900; }
-        #training-info { font-size: 18px; color: #ff6600; font-weight: bold; }
+        #training-info { font-size: 16px; color: #ff6600; font-weight: bold; }
         #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 48%; }
-        .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; }
-        .name { font-size: 22px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 5px; font-weight: 900; }
+        .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; overflow: hidden; }
+        .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
         .ex-list { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around; }
-        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 2px 0; }
-        .ex-text { font-size: 18px; font-weight: 700; color: #eee; }
-        .reps { color: #00ffcc; font-weight: 900; border: 1.5px solid #00ffcc; padding: 2px 6px; border-radius: 4px; font-size: 16px; min-width: 70px; text-align: center; }
-        .weight { color: #ff9f43; font-weight: bold; margin-right: 5px; font-size: 14px; }
-        .footer-credit { height: 20px; font-size: 14px; color: #ff6600; text-align: left; padding: 0 15px; font-family: monospace; font-weight: bold; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 2px 0; height: 16%; }
+        .ex-text { font-size: 16px; font-weight: 700; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; display: flex; align-items: center; }
+        .reps { 
+            color: #00ffcc; font-weight: 900; border: 1.5px solid #00ffcc; 
+            padding: 1px 4px; border-radius: 4px; font-size: 14px; 
+            min-width: 70px; text-align: center; background: rgba(0,255,204,0.05);
+            margin-right: 5px;
+        }
+        .weight { color: #ff9f43; font-weight: 900; margin-right: 6px; font-size: 13px; background: rgba(255,159,67,0.1); padding: 0 3px; border-radius: 3px; }
+        .footer-credit { height: 18px; font-size: 11px; color: #444; text-align: left; padding: 0 10px; font-family: Arial; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">מעדכן...</div>
+        <div id="training-info">טוען...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
@@ -34,114 +39,111 @@
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
-        var SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
-        // פנייה ישירה לקובץ CSV - הכי אמין שיש
-        var CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=0';
+        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-        function parseCSV(text) {
-            var lines = text.split('\n');
-            return lines.map(line => {
-                // טיפול בגרשיים שגוגל מוסיף ב-CSV
-                return line.split(',').map(cell => cell.replace(/^"|"$/g, '').trim());
-            });
+        async function loadData() {
+            try {
+                const response = await fetch(URL + '&t=' + Date.now());
+                const text = await response.text();
+                const rows = text.split('\n').map(line => 
+                    line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim())
+                );
+                parse(rows);
+            } catch (e) { console.error(e); }
         }
 
-        async function updateDashboard() {
-            try {
-                const response = await fetch(CSV_URL + '&cache=' + Date.now());
-                const text = await response.text();
-                const rows = parseCSV(text);
-                
-                var now = new Date();
-                var nowMin = (now.getHours() * 60) + now.getMinutes();
-                var sessions = [];
-                var currentSession = null;
+        function parse(rows) {
+            const now = new Date();
+            const nowMin = (now.getHours() * 60) + now.getMinutes();
+            let sessions = [], current = null;
 
-                for (var i = 0; i < rows.length; i++) {
-                    var cellA = rows[i][0];
-                    if (cellA && cellA.includes("אימון")) {
-                        var timeMatch = cellA.match(/(\d{1,2}):(\d{2})/);
-                        if (timeMatch) {
-                            var sMin = (parseInt(timeMatch[1]) * 60) + parseInt(timeMatch[2]);
-                            if (currentSession) sessions.push(currentSession);
-                            currentSession = { start: sMin, title: cellA, trainees: [] };
-                        }
-                    } else if (currentSession && cellA && cellA !== "מתאמנת" && cellA !== "") {
-                        currentSession.trainees.push(rows[i]);
+            rows.forEach(row => {
+                if (row[0] && row[0].includes("אימון")) {
+                    const m = row[0].match(/(\d{1,2}):(\d{2})/);
+                    if (m) {
+                        if (current) sessions.push(current);
+                        current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: row[0], trainees: [] };
                     }
+                } else if (current && row[0] && row[0] !== "מתאמנת" && row[0] !== "") {
+                    current.trainees.push(row);
                 }
-                if (currentSession) sessions.push(currentSession);
+            });
+            if (current) sessions.push(current);
 
-                // בחירת האימון המתאים (נוכחי או זה שהתחיל לא מזמן)
-                var active = null;
-                for (var j = 0; j < sessions.length; j++) {
-                    // מציג אימון שהתחיל עד לפני 90 דקות
-                    if (nowMin >= sessions[j].start && nowMin < (sessions[j].start + 90)) {
-                        active = sessions[j];
-                    }
-                }
-                
-                // אם אין אימון שרץ עכשיו, מראה את הבא בטווח של 10 דקות
-                if (!active) {
-                    for (var j = 0; j < sessions.length; j++) {
-                        if (nowMin >= (sessions[j].start - 10) && nowMin < sessions[j].start) {
-                            active = sessions[j];
-                            break;
-                        }
-                    }
-                }
-
-                render(active);
-            } catch (e) {
-                document.getElementById('training-info').innerText = "שגיאת חיבור";
-            }
+            let active = sessions.find(s => nowMin >= (s.start - 10) && nowMin < (s.start + 90));
+            render(active);
         }
 
         function render(active) {
-            var container = document.getElementById('container');
-            var info = document.getElementById('training-info');
+            const container = document.getElementById('container');
+            const info = document.getElementById('training-info');
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:30px;margin-top:15%;color:#444;">ממתין לאימון הבא</div>';
-                info.innerText = "הפסקה";
+                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">הפסקה</div>';
+                info.innerText = "סטודיו אלמה";
                 return;
             }
             info.innerText = active.title;
             container.innerHTML = '';
             
-            var trainees = active.trainees;
-            var maxPerRow = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
-            var rowDiv = document.createElement('div');
+            const trainees = active.trainees;
+            const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
+            let rowDiv = document.createElement('div');
             rowDiv.className = 'row';
 
-            trainees.forEach((t, index) => {
-                if (index > 0 && index % maxPerRow === 0) {
+            trainees.forEach((t, i) => {
+                if (i > 0 && i % max === 0) {
                     container.appendChild(rowDiv);
                     rowDiv = document.createElement('div');
                     rowDiv.className = 'row';
                 }
-                var exHtml = "";
-                for (var m = 1; m < t.length; m += 3) {
-                    var ex = t[m] || "";
-                    if (ex && ex !== "...") {
-                        var w = t[m+1] || "";
-                        var r = t[m+2] || "";
-                        exHtml += `<div class="ex-row"><div class="ex-text"><span>${ex}</span><span class="weight">${w}</span></div><div class="reps">${r}</div></div>`;
+                
+                let exs = "";
+                // עיבוד חכם - לא מסתמך על מיקום קבוע
+                for (let m = 1; m < t.length; m++) {
+                    let val = t[m] || "";
+                    if (val === "" || val === "..." || val === "null") continue;
+
+                    // אם זה נראה כמו תרגיל (טקסט ארוך)
+                    if (val.length > 4 || (!val.includes('.') && !val.includes(',') && !val.toLowerCase().includes('k'))) {
+                        let name = val;
+                        let weight = "";
+                        let reps = "";
+
+                        // בודק את 2 התאים הבאים כדי למצוא משקל וחזרות
+                        for(let k=1; k<=2; k++) {
+                            let next = (t[m+k] || "").toLowerCase();
+                            if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) {
+                                weight = t[m+k];
+                            } else if (next.includes('.') || next.includes(',') || (next.match(/^\d+$/) && next.length > 0)) {
+                                reps = t[m+k];
+                            }
+                        }
+
+                        reps = reps.replace(/,/g, 'x').replace(/\./g, 'x');
+                        
+                        exs += `<div class="ex-row">
+                            <div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div>
+                            <div class="reps">${reps || '--'}</div>
+                        </div>`;
+                        m += 2; // מדלג על תאי הנתונים של התרגיל הנוכחי
                     }
                 }
-                var card = document.createElement('div');
+                
+                const card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exHtml}</div>`;
+                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`;
                 rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
         }
 
-        setInterval(updateDashboard, 15000);
+        setInterval(loadData, 15000);
         setInterval(() => {
-            var d = new Date();
+            const d = new Date();
             document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
         }, 1000);
-        updateDashboard();
+        loadData();
     </script>
 </body>
 </html>
