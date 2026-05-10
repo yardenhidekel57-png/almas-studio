@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>STUDIO ALMA TV</title>
+    <title>STUDIO ALMA TV - NEW</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.05; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
@@ -22,12 +21,18 @@
         .ex-text { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%; }
         .reps { color: #00ffcc; font-weight: 900; background: rgba(0, 255, 204, 0.1); padding: 2px 5px; border-radius: 4px; border: 1.5px solid #00ffcc; font-size: 15px; min-width: 70px; text-align: center; }
         .weight { color: #ff9f43; font-weight: bold; font-size: 13px; margin-right: 3px; }
-        .footer-credit { height: 18px; font-size: 11px; color: #444; text-align: left; padding: 0 10px; font-family: Arial; }
+        
+        /* חותמת בולטת יותר */
+        .footer-credit { 
+            height: 20px; font-size: 13px; color: #ff6600; 
+            text-align: left; padding: 0 15px; font-family: 'Courier New', monospace;
+            font-weight: bold; opacity: 0.8;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div id="training-info">מעדכן נתונים...</div>
+        <div id="training-info">טוען...</div>
         <div class="logo-main">STUDIO ALMA</div>
         <div id="time">00:00:00</div>
     </div>
@@ -37,7 +42,8 @@
     <script>
         var SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk'; 
 
-        function handleData(data) {
+        // שיניתי את שם הפונקציה כדי לשבור את ה-Cache
+        function processSheetData(data) {
             if (!data || !data.table) return;
             var rows = data.table.rows;
             var now = new Date();
@@ -60,22 +66,21 @@
             }
             if (currentSession) sessions.push(currentSession);
 
-            // לוגיקה חדשה: מוצאים את האימון האחרון שזמן ההתחלה שלו עבר או הגיע ממש עכשיו
+            // לוגיקה לבחירת אימון: תמיד לקחת את האימון הכי קרוב לעכשיו שכבר התחיל
             var active = null;
             for (var j = 0; j < sessions.length; j++) {
                 var s = sessions[j];
-                // אם זמן האימון הגיע (או עבר בטווח של 90 דקות), הוא נחשב פעיל
+                // האימון מוצג רק אם השעה הנוכחית היא אחרי שעת ההתחלה ועד 90 דקות אחרי
                 if (nowMin >= s.start && nowMin < (s.start + 90)) {
                     active = s; 
                 }
             }
 
-            // אם אין אימון שהתחיל ממש עכשיו, נבדוק אם יש אימון שמתחיל ב-15 דקות הקרובות
+            // רק אם אין אימון שרץ כרגע, מראה את האימון הבא (רק 10 דקות לפני)
             if (!active) {
                 for (var j = 0; j < sessions.length; j++) {
-                    var s = sessions[j];
-                    if (nowMin >= (s.start - 15) && nowMin < s.start) {
-                        active = s;
+                    if (nowMin >= (sessions[j].start - 10) && nowMin < sessions[j].start) {
+                        active = sessions[j];
                         break;
                     }
                 }
@@ -85,7 +90,7 @@
             var info = document.getElementById('training-info');
             
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#555;">ממתין לתחילת האימון...</div>';
+                container.innerHTML = '<div style="text-align:center;font-size:24px;margin-top:15%;color:#444;">אין אימון פעיל כרגע</div>';
                 info.innerText = 'הפסקה';
                 return;
             }
@@ -93,8 +98,6 @@
             info.innerText = active.title;
             container.innerHTML = '';
             var trainees = active.trainees;
-            if (trainees.length === 0) return;
-
             var max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
             var rowDiv = document.createElement('div');
             rowDiv.className = 'row';
@@ -125,7 +128,8 @@
 
         function refresh() {
             var s = document.createElement('script');
-            s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:handleData&gid=0&tcb=' + Date.now();
+            // שיניתי את ה-callback ל-processSheetData
+            s.src = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=responseHandler:processSheetData&gid=0&tcb=' + Date.now();
             document.head.appendChild(s);
             s.onload = function() { if (s.parentNode) s.parentNode.removeChild(s); };
         }
