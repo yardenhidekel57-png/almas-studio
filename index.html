@@ -39,11 +39,20 @@
         #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
         .auth-btn:active { background: #e05500; }
+        
+        /* הסתרת נגני האודיו הפיזיים מהמסך כדי שלא יפריעו לעיצוב */
+        .hidden-audio { display: none; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.85; } }
     </style>
 </head>
 <body>
+    <div class="hidden-audio">
+        <audio id="aud-break" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+        <audio id="aud-next" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+        <audio id="aud-complete" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+        <audio id="aud-5" src="https://www.w3schools.com/tags/horse.ogg" preload="auto"></audio> </div>
+
     <div class="header">
         <div id="time">00:00:00</div>
         <div class="header-center">
@@ -66,16 +75,13 @@
         const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
         const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
-        // קבצי שמע אמיתיים של מלל וספירה לאחור המאוחסנים בשרת חיצוני יציב
-        const audioFiles = {
-            'break': new Audio('https://ttsmp3.com/created_mp3/3dfbf70be52968eb1e40eb37fddb1b88.mp3'), // "Break time"
-            'next': new Audio('https://ttsmp3.com/created_mp3/9d54e5b72183e8fa0bdff642eb62a129.mp3'),  // "Next round"
-            'complete': new Audio('https://ttsmp3.com/created_mp3/8b387ba98ca8fe2e15da28e833ea79b3.mp3'),  // "Workout complete"
-            '5': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/five_female.mp3'),
-            '4': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/t_W4e2H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/four_female.mp3'),
-            '3': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/three_female.mp3'),
-            '2': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/h_R5f_X8F7yDkdG7J6K4Y82F9Svd2M4Z/category_female_countdown/two_female.mp3'),
-            '1': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/b_Y6f_X8F7yDkdG7J6K4Y82F9Svd2T5Z/category_female_countdown/one_female.mp3')
+        // כתובות יציבות ורשמיות של קבצי ספירה לאחור ומלל אנושי
+        const countdownUrls = {
+            '5': 'https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/five_female.mp3',
+            '4': 'https://audio.code.org/api/v1/animation-library/gamelab/t_W4e2H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/four_female.mp3',
+            '3': 'https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/three_female.mp3',
+            '2': 'https://audio.code.org/api/v1/animation-library/gamelab/h_R5f_X8F7yDkdG7J6K4Y82F9Svd2M4Z/category_female_countdown/two_female.mp3',
+            '1': 'https://audio.code.org/api/v1/animation-library/gamelab/b_Y6f_X8F7yDkdG7J6K4Y82F9Svd2T5Z/category_female_countdown/one_female.mp3'
         };
 
         let timerSeconds = 0;
@@ -88,7 +94,6 @@
 
         let timerInterval = null;
         let lastSpokenSecond = -1;
-        
         let lastSheetStatus = "STOP";
 
         const TOTAL_ROUNDS = 6; 
@@ -99,23 +104,58 @@
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // טעינה ואישור מראש של קבצי האודיו בדפדפנים
-            Object.values(audioFiles).forEach(audio => {
-                audio.play().then(() => { audio.pause(); }).catch(e => {});
+            // פתיחה אקטיבית וקשוחה של נגני ה-HTML5 על ידי הפעלה ועצירה מידית בעת הלחיצה
+            const ids = ['aud-break', 'aud-next', 'aud-complete', 'aud-5'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.play().then(() => { el.pause(); }).catch(e => console.log(e));
+                }
             });
             
+            // הפעלת מערכת הדיבור המובנית כגיבוי מקביל
+            if ('speechSynthesis' in window) {
+                let u = new SpeechSynthesisUtterance("System active");
+                u.volume = 0.01;
+                window.speechSynthesis.speak(u);
+            }
+
             loadData();
             setInterval(loadData, 2500);
         }
 
-        // פונקציית השמעת קבצי המלל
-        function playSpeechFile(key) {
-            if (!isAudioUnlocked || !audioFiles[key]) return;
+        // פונקציית הדיבור והשמעת המלל שעוקפת את מגבלות ה-TVBro
+        function speakInstructions(text, type) {
+            if (!isAudioUnlocked) return;
+
+            // 1. ניסיון דיבור רגיל (עובד באייפון/מחשב)
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.2;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // 2. הפעלת קובץ השמע הפיזי של ה-HTML5 (עבור הטלוויזיה ו-TVBro)
             try {
-                audioFiles[key].currentTime = 0;
-                audioFiles[key].volume = 1.0;
-                audioFiles[key].play().catch(e => console.log("Audio play error:", e));
-            } catch(e) { console.error(e); }
+                if (type === 'break') {
+                    let aud = document.getElementById('aud-break');
+                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
+                } else if (type === 'next') {
+                    let aud = document.getElementById('aud-next');
+                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
+                } else if (type === 'complete') {
+                    let aud = document.getElementById('aud-complete');
+                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
+                } else if (countdownUrls[type]) {
+                    // עדכון דינמי של הנגן החמישי לקובץ הספירה הספציפי (5,4,3,2,1)
+                    let aud = document.getElementById('aud-5');
+                    aud.src = countdownUrls[type];
+                    aud.currentTime = 0;
+                    aud.play().catch(e => console.log(e));
+                }
+            } catch(e) { console.error("Audio playback failure", e); }
         }
 
         function parseCSV(text) {
@@ -231,7 +271,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        playSpeechFile('break'); // השמעת "Break time"
+                        speakInstructions("Break time", "break"); 
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -240,7 +280,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            playSpeechFile('next'); // השמעת "Next round"
+                            speakInstructions("Next round", "next"); 
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -248,7 +288,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            playSpeechFile('complete'); // השמעת "Workout complete"
+                            speakInstructions("Workout complete", "complete"); 
                             updateTimerDisplay();
                         }
                     }
@@ -258,9 +298,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // ספירה לאחור במלל אנושי (5, 4, 3, 2, 1)
+                // הפעלת ספירה לאחור אנושית (5, 4, 3, 2, 1)
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    playSpeechFile(timerSeconds.toString());
+                    speakInstructions(timerSeconds.toString(), timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
