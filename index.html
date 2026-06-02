@@ -39,11 +39,21 @@
         #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
         .auth-btn:active { background: #e05500; }
+        
+        .hidden-audio { display: none; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.85; } }
     </style>
 </head>
 <body>
+
+    <div class="hidden-audio">
+        <audio id="aud-break" src="https://audio.code.org/api/v1/animation-library/gamelab/8v28H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/break_time_female.mp3" preload="auto"></audio>
+        <audio id="aud-next" src="https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/next_round_female.mp3" preload="auto"></audio>
+        <audio id="aud-complete" src="https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/workout_complete_female.mp3" preload="auto"></audio>
+        
+        <audio id="aud-countdown" preload="auto"></audio>
+    </div>
 
     <div class="header">
         <div id="time">00:00:00</div>
@@ -67,6 +77,15 @@
         const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
         const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
+        // לינקים ישירים לקבצי שמע אנושיים עבור הספירה לאחור
+        const countdownUrls = {
+            '5': 'https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/five_female.mp3',
+            '4': 'https://audio.code.org/api/v1/animation-library/gamelab/t_W4e2H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/four_female.mp3',
+            '3': 'https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/three_female.mp3',
+            '2': 'https://audio.code.org/api/v1/animation-library/gamelab/h_R5f_X8F7yDkdG7J6K4Y82F9Svd2M4Z/category_female_countdown/two_female.mp3',
+            '1': 'https://audio.code.org/api/v1/animation-library/gamelab/b_Y6f_X8F7yDkdG7J6K4Y82F9Svd2T5Z/category_female_countdown/one_female.mp3'
+        };
+
         let timerSeconds = 0;
         let initialDuration = 0;
         let timerStatus = "STOP"; 
@@ -83,31 +102,25 @@
         let currentRound = 1;
         let isAudioUnlocked = false;
 
-        // פונקציית דיבור מותאמת ספציפית לטלוויזיות אנדרואיד ודפדפנים מוגבלים
-        function speak(text) {
+        function announce(type) {
             if (!isAudioUnlocked) return;
             try {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel(); // מנקה דיבור קודם תקוע
-                    
-                    let msg = new SpeechSynthesisUtterance();
-                    msg.text = text;
-                    msg.lang = 'en-US';
-                    msg.rate = 1.1;
-                    msg.volume = 1.0;
-                    
-                    // מציאת קול מובנה של המערכת בטלוויזיה
-                    let voices = window.speechSynthesis.getVoices();
-                    if (voices && voices.length > 0) {
-                        // מעדיף קול של אישה באנגלית אם קיים במערכת של הטלוויזיה
-                        let englishVoice = voices.find(v => v.lang.includes('en'));
-                        if (englishVoice) msg.voice = englishVoice;
+                if (['break', 'next', 'complete'].includes(type)) {
+                    let player = document.getElementById(`aud-${type}`);
+                    if (player) {
+                        player.currentTime = 0;
+                        player.play().catch(e => console.log(e));
                     }
-                    
-                    window.speechSynthesis.speak(msg);
+                } else if (countdownUrls[type]) {
+                    let player = document.getElementById('aud-countdown');
+                    if (player) {
+                        player.src = countdownUrls[type];
+                        player.currentTime = 0;
+                        player.play().catch(e => console.log(e));
+                    }
                 }
             } catch (e) {
-                console.error("TTS Error:", e);
+                console.error("Audio error:", e);
             }
         }
 
@@ -115,8 +128,11 @@
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // הפעלה ראשונית של ערוץ הדיבור בטלוויזיה
-            speak("System Ready");
+            // הפעלה ודעיכה חרישית ברגע הלחיצה כדי לתת לטלוויזיה "אישור" חוקי להריץ אותם אחר כך
+            ['aud-break', 'aud-next', 'aud-complete'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) { el.play().then(() => el.pause()).catch(e => console.log(e)); }
+            });
 
             loadData();
             setInterval(loadData, 2500);
@@ -235,7 +251,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        speak("Break time"); 
+                        announce('break'); // כריזה אנושית למנוחה
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -244,7 +260,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            speak("Next round"); 
+                            announce('next'); // כריזה אנושית לסבב הבא
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -252,7 +268,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            speak("Workout complete. Well done"); 
+                            announce('complete'); // כריזה אנושית לסיום אימון
                             updateTimerDisplay();
                         }
                     }
@@ -262,9 +278,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // ספירה לאחור קולית אנושית
+                // כריזה אנושית לספירה לאחור (5, 4, 3, 2, 1)
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    speak(timerSeconds.toString());
+                    announce(timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
@@ -382,14 +398,6 @@
                 rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
-        }
-
-        // טעינה מוקדמת של רשימת הקולות בדפדפן (נצרך עבור חלק מגרסאות אנדרואיד)
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-            }
         }
 
         setInterval(() => {
