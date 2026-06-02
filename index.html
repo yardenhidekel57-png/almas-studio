@@ -20,7 +20,7 @@
         #workout-timer.halfway { color: #ff9f43; border-color: #ff9f43; background: rgba(255, 159, 103, 0.1); }
         #workout-timer.break { color: #ff9f43; border-color: #ff9f43; background: rgba(255, 159, 67, 0.15); animation: blink 1.5s infinite alternate; }
         
-        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        #container { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; position: relative; }
         .row { display: flex; flex: 1; gap: 4px; justify-content: center; align-items: stretch; max-height: 48%; }
         .card { background: #111; border: 1.5px solid #333; border-radius: 10px; display: flex; flex-direction: column; flex: 1; padding: 6px; overflow: hidden; }
         .name { font-size: 20px; color: #ff6600; text-align: center; border-bottom: 2px solid #444; margin-bottom: 3px; font-weight: 900; padding-bottom: 2px; }
@@ -36,6 +36,11 @@
         .weight { color: #ff9f43; font-weight: 900; margin-right: 6px; font-size: 13px; background: rgba(255,159,67,0.1); padding: 0 3px; border-radius: 3px; }
         .footer-credit { height: 18px; font-size: 11px; color: #444; text-align: left; padding: 0 10px; font-family: Arial; }
         
+        /* שכבת ההגנה והכפתור לפתיחת חסימת האודיו במובייל וטלוויזיות */
+        #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
+        .auth-btn:active { background: #e05500; }
+
         @keyframes blink { from { opacity: 1; } to { opacity: 0.85; } }
     </style>
 </head>
@@ -48,7 +53,13 @@
         </div>
         <div class="logo-main">STUDIO ALMA</div>
     </div>
-    <div id="container"></div>
+    
+    <div id="container">
+        <div id="audio-auth-overlay">
+            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת</button>
+        </div>
+    </div>
+    
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
@@ -72,6 +83,16 @@
 
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
+        let isAudioUnlocked = false;
+
+        // הפעלת האודיו וטעינת הלופים מיד לאחר אינטראקציה ראשונית
+        function activateAudioSystem() {
+            isAudioUnlocked = true;
+            document.getElementById('audio-auth-overlay').style.display = 'none';
+            speak("System active"); 
+            loadData();
+            setInterval(loadData, 2500);
+        }
 
         function speak(text) {
             if ('speechSynthesis' in window) {
@@ -106,10 +127,10 @@
         }
 
         async function loadData() {
+            if (!isAudioUnlocked) return; // מונע משיכת נתונים כל עוד המשתמש לא לחץ
             try {
                 const timestamp = '&t=' + Date.now();
                 
-                // 1. משיכת נתוני הטיימר
                 const resTimer = await fetch(TIMER_URL + timestamp);
                 const textTimer = await resTimer.text();
                 if (textTimer && textTimer.trim().length > 0) {
@@ -117,7 +138,6 @@
                     parseTimerSettings(rowsTimer);
                 }
 
-                // 2. משיכת נתוני המתאמנות
                 const resMain = await fetch(MAIN_URL + timestamp);
                 const textMain = await resMain.text();
                 if (textMain && textMain.trim().length > 0) {
@@ -295,7 +315,6 @@
             for (let i = 0; i < sessions.length; i++) {
                 let s = sessions[i];
                 let nextS = sessions[i+1];
-                // שינוי לוגי: מציג את האימון בדיוק החל משעת ההתחלה שלו ועד שהוא מסתיים (או עד האימון הבא)
                 if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) {
                     if (nowMin < s.start + 65) active = s;
                 }
@@ -360,9 +379,6 @@
             const d = new Date();
             document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
         }, 1000);
-
-        loadData();
-        setInterval(loadData, 2500);
     </script>
 </body>
 </html>
