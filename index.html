@@ -39,19 +39,11 @@
         #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
         .auth-btn:active { background: #e05500; }
-        
-        /* הסתרת נגני האודיו הפיזיים מהמסך כדי שלא יפריעו לעיצוב */
-        .hidden-audio { display: none; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.85; } }
     </style>
 </head>
 <body>
-    <div class="hidden-audio">
-        <audio id="aud-break" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
-        <audio id="aud-next" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-        <audio id="aud-complete" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
-        <audio id="aud-5" src="https://www.w3schools.com/tags/horse.ogg" preload="auto"></audio> </div>
 
     <div class="header">
         <div id="time">00:00:00</div>
@@ -75,15 +67,6 @@
         const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
         const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
-        // כתובות יציבות ורשמיות של קבצי ספירה לאחור ומלל אנושי
-        const countdownUrls = {
-            '5': 'https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/five_female.mp3',
-            '4': 'https://audio.code.org/api/v1/animation-library/gamelab/t_W4e2H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/four_female.mp3',
-            '3': 'https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/three_female.mp3',
-            '2': 'https://audio.code.org/api/v1/animation-library/gamelab/h_R5f_X8F7yDkdG7J6K4Y82F9Svd2M4Z/category_female_countdown/two_female.mp3',
-            '1': 'https://audio.code.org/api/v1/animation-library/gamelab/b_Y6f_X8F7yDkdG7J6K4Y82F9Svd2T5Z/category_female_countdown/one_female.mp3'
-        };
-
         let timerSeconds = 0;
         let initialDuration = 0;
         let timerStatus = "STOP"; 
@@ -100,62 +83,43 @@
         let currentRound = 1;
         let isAudioUnlocked = false;
 
+        // פונקציית דיבור מותאמת ספציפית לטלוויזיות אנדרואיד ודפדפנים מוגבלים
+        function speak(text) {
+            if (!isAudioUnlocked) return;
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // מנקה דיבור קודם תקוע
+                    
+                    let msg = new SpeechSynthesisUtterance();
+                    msg.text = text;
+                    msg.lang = 'en-US';
+                    msg.rate = 1.1;
+                    msg.volume = 1.0;
+                    
+                    // מציאת קול מובנה של המערכת בטלוויזיה
+                    let voices = window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        // מעדיף קול של אישה באנגלית אם קיים במערכת של הטלוויזיה
+                        let englishVoice = voices.find(v => v.lang.includes('en'));
+                        if (englishVoice) msg.voice = englishVoice;
+                    }
+                    
+                    window.speechSynthesis.speak(msg);
+                }
+            } catch (e) {
+                console.error("TTS Error:", e);
+            }
+        }
+
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // פתיחה אקטיבית וקשוחה של נגני ה-HTML5 על ידי הפעלה ועצירה מידית בעת הלחיצה
-            const ids = ['aud-break', 'aud-next', 'aud-complete', 'aud-5'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.play().then(() => { el.pause(); }).catch(e => console.log(e));
-                }
-            });
-            
-            // הפעלת מערכת הדיבור המובנית כגיבוי מקביל
-            if ('speechSynthesis' in window) {
-                let u = new SpeechSynthesisUtterance("System active");
-                u.volume = 0.01;
-                window.speechSynthesis.speak(u);
-            }
+            // הפעלה ראשונית של ערוץ הדיבור בטלוויזיה
+            speak("System Ready");
 
             loadData();
             setInterval(loadData, 2500);
-        }
-
-        // פונקציית הדיבור והשמעת המלל שעוקפת את מגבלות ה-TVBro
-        function speakInstructions(text, type) {
-            if (!isAudioUnlocked) return;
-
-            // 1. ניסיון דיבור רגיל (עובד באייפון/מחשב)
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 1.2;
-                window.speechSynthesis.speak(utterance);
-            }
-
-            // 2. הפעלת קובץ השמע הפיזי של ה-HTML5 (עבור הטלוויזיה ו-TVBro)
-            try {
-                if (type === 'break') {
-                    let aud = document.getElementById('aud-break');
-                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
-                } else if (type === 'next') {
-                    let aud = document.getElementById('aud-next');
-                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
-                } else if (type === 'complete') {
-                    let aud = document.getElementById('aud-complete');
-                    aud.currentTime = 0; aud.play().catch(e => console.log(e));
-                } else if (countdownUrls[type]) {
-                    // עדכון דינמי של הנגן החמישי לקובץ הספירה הספציפי (5,4,3,2,1)
-                    let aud = document.getElementById('aud-5');
-                    aud.src = countdownUrls[type];
-                    aud.currentTime = 0;
-                    aud.play().catch(e => console.log(e));
-                }
-            } catch(e) { console.error("Audio playback failure", e); }
         }
 
         function parseCSV(text) {
@@ -271,7 +235,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        speakInstructions("Break time", "break"); 
+                        speak("Break time"); 
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -280,7 +244,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            speakInstructions("Next round", "next"); 
+                            speak("Next round"); 
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -288,7 +252,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            speakInstructions("Workout complete", "complete"); 
+                            speak("Workout complete. Well done"); 
                             updateTimerDisplay();
                         }
                     }
@@ -298,9 +262,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // הפעלת ספירה לאחור אנושית (5, 4, 3, 2, 1)
+                // ספירה לאחור קולית אנושית
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    speakInstructions(timerSeconds.toString(), timerSeconds.toString());
+                    speak(timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
@@ -418,6 +382,14 @@
                 rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
+        }
+
+        // טעינה מוקדמת של רשימת הקולות בדפדפן (נצרך עבור חלק מגרסאות אנדרואיד)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
         }
 
         setInterval(() => {
