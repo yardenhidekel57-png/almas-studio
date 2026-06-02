@@ -39,20 +39,11 @@
         #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
         .auth-btn:active { background: #e05500; }
-        
-        .hidden-audio { display: none; }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.85; } }
     </style>
 </head>
 <body>
-
-    <div class="hidden-audio">
-        <audio id="aud-break"></audio>
-        <audio id="aud-next"></audio>
-        <audio id="aud-complete"></audio>
-        <audio id="aud-countdown"></audio>
-    </div>
 
     <div class="header">
         <div id="time">00:00:00</div>
@@ -76,54 +67,6 @@
         const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
         const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
-        // סיגנלים אקוסטיים אנושיים דחוסים המוטמעים ישירות בקוד כדי לעקוף חסימות שרתים
-        const audioData = {
-            '1': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0V/gH9/f39/f39/f4CAgIGCgoKCgoKCgoKCgoKCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaGhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            '2': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEb/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv1F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/f39/f39/f39/gICAgYKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKChIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhoWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            '3': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0X/f4B/f39/f39/f3+AgICBgoKCgoKCgoKCgoKCgoGCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            '4': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEb/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv1F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/f39/f39/f39/gICAgYKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKChIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhoWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            '5': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0X/f4B/f39/f39/f3+AgICBgoKCgoKCgoKCgoKCgoGCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            'break': 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTS0UAAAAPAAADY291bnRkb3duAFhYWBYAAAAVAAADYnJlYWtfdGltZV9mZW1hbGUALm1wM3VHdWtsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            'next': 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTS0UAAAAPAAADY291bnRkb3duAFhYWBYAAAAVAAADYnJlYWtfdGltZV9mZW1hbGUALm1wM3VHdWtsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            'complete': 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTS0UAAAAPAAADY291bnRkb3duAFhYWBYAAAAVAAADYnJlYWtfdGltZV9mZW1hbGUALm1wM3VHdWtsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF'
-        };
-
-        // שימוש במנוע הדיבור של הדפדפן עצמו (Web Speech API) כגיבוי מקומי חלופי וקול אנושי יציב במקום שרתי אינטרנט
-        function announceWithFallback(text, type) {
-            if (!isAudioUnlocked) return;
-            
-            // פתרון 1: ניסיון השמעה מתוך ה-Data המוטמע ישירות בקוד (למניעת חסימות רשת)
-            try {
-                if (['break', 'next', 'complete'].includes(type)) {
-                    let player = document.getElementById(`aud-${type}`);
-                    if (player && audioData[type]) {
-                        player.src = audioData[type];
-                        player.currentTime = 0;
-                        player.play().catch(e => console.log(e));
-                    }
-                } else if (audioData[type]) {
-                    let player = document.getElementById('aud-countdown');
-                    if (player) {
-                        player.src = audioData[type];
-                        player.currentTime = 0;
-                        player.play().catch(e => console.log(e));
-                    }
-                }
-            } catch (e) { console.log("Embedded audio failed, using browser speech engine."); }
-
-            // פתרון 2: הפעלת הכריזה בקול אנושי מתוך הדפדפן (Speech Engine) – עובד ישירות בטלוויזיה ללא רשת
-            try {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    let msg = new SpeechSynthesisUtterance(text);
-                    msg.lang = 'en-US';
-                    msg.rate = 1.15;
-                    msg.volume = 1.0;
-                    window.speechSynthesis.speak(msg);
-                }
-            } catch (e) { console.error("Speech Engine Error:", e); }
-        }
-
         let timerSeconds = 0;
         let initialDuration = 0;
         let timerStatus = "STOP"; 
@@ -139,13 +82,63 @@
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
         let isAudioUnlocked = false;
+        let audioCtx = null;
+
+        // מנוע כריזה מתקדם המבוסס על AudioContext ומנוע דיבור פנימי - חסין לחסימות דפדפנים
+        function announce(text) {
+            if (!isAudioUnlocked) return;
+            try {
+                // אתחול מחדש של ערוץ השמע הישיר של המעבד במידה ונסגר
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // מנקה כריזות קודמות תקועות
+                    
+                    let speech = new SpeechSynthesisUtterance(text);
+                    speech.lang = 'en-US';
+                    speech.rate = 1.1;
+                    speech.volume = 1.0;
+                    
+                    // אופטימיזציה למציאת קול נשי ברור
+                    let voices = window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        let femaleVoice = voices.find(v => v.lang.includes('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('google')));
+                        if (!femaleVoice) femaleVoice = voices.find(v => v.lang.includes('en'));
+                        if (femaleVoice) speech.voice = femaleVoice;
+                    }
+                    
+                    window.speechSynthesis.speak(speech);
+                }
+            } catch (e) {
+                console.error("Audio Engine Error:", e);
+            }
+        }
 
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // "הערה" וטעינה מראש של ערוץ השמע
-            announceWithFallback("System active", "1");
+            // יצירת אינטראקציה ישירה עם חומרת הטלוויזיה
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime); // צליל חריש קידוד
+                osc.start(0);
+                osc.stop(0.05);
+            } catch(e) { console.log(e); }
+
+            // השמעת בדיקה מיידית
+            setTimeout(() => {
+                announce("System Ready");
+            }, 100);
 
             loadData();
             setInterval(loadData, 2500);
@@ -264,7 +257,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        announceWithFallback("Break time", "break"); 
+                        announce("Break time"); // כריזה אנושית
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -273,7 +266,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            announceWithFallback("Next round", "next"); 
+                            announce("Next round"); // כריזה אנושית
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -281,7 +274,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            announceWithFallback("Workout complete. Well done", "complete"); 
+                            announce("Workout complete. Well done"); // כריזה אנושית
                             updateTimerDisplay();
                         }
                     }
@@ -291,9 +284,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // כריזה אנושית לספירה לאחור (5, 4, 3, 2, 1)
+                // ספירה לאחור אנושית (5, 4, 3, 2, 1)
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    announceWithFallback(timerSeconds.toString(), timerSeconds.toString());
+                    announce(timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
@@ -411,6 +404,14 @@
                 rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
+        }
+
+        // טעינה מוקדמת של רשימת קולות לזיכרון הדפדפן בטלוויזיה
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
         }
 
         setInterval(() => {
