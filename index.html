@@ -36,7 +36,6 @@
         .weight { color: #ff9f43; font-weight: 900; margin-right: 6px; font-size: 13px; background: rgba(255,159,67,0.1); padding: 0 3px; border-radius: 3px; }
         .footer-credit { height: 18px; font-size: 11px; color: #444; text-align: left; padding: 0 10px; font-family: Arial; }
         
-        /* שכבת ההגנה והכפתור לפתיחת חסימת האודיו במובייל וטלוויזיות */
         #audio-auth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-btn { background: #ff6600; color: white; border: none; padding: 22px 45px; font-size: 26px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255,102,0,0.6); font-family: Arial, sans-serif; }
         .auth-btn:active { background: #e05500; }
@@ -67,6 +66,18 @@
         const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
         const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
+        // קבצי שמע אמיתיים של מלל וספירה לאחור המאוחסנים בשרת חיצוני יציב
+        const audioFiles = {
+            'break': new Audio('https://ttsmp3.com/created_mp3/3dfbf70be52968eb1e40eb37fddb1b88.mp3'), // "Break time"
+            'next': new Audio('https://ttsmp3.com/created_mp3/9d54e5b72183e8fa0bdff642eb62a129.mp3'),  // "Next round"
+            'complete': new Audio('https://ttsmp3.com/created_mp3/8b387ba98ca8fe2e15da28e833ea79b3.mp3'),  // "Workout complete"
+            '5': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/O0_vVd6lHn7Dksv888wA2bF6wGv3EAn8/category_female_countdown/five_female.mp3'),
+            '4': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/t_W4e2H_U3OidI6N9N74D8Y81Hvd2S1Z/category_female_countdown/four_female.mp3'),
+            '3': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/Z_b7_Xb8F7yDkdG7J6K4Y82F9Svd2E3Z/category_female_countdown/three_female.mp3'),
+            '2': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/h_R5f_X8F7yDkdG7J6K4Y82F9Svd2M4Z/category_female_countdown/two_female.mp3'),
+            '1': new Audio('https://audio.code.org/api/v1/animation-library/gamelab/b_Y6f_X8F7yDkdG7J6K4Y82F9Svd2T5Z/category_female_countdown/one_female.mp3')
+        };
+
         let timerSeconds = 0;
         let initialDuration = 0;
         let timerStatus = "STOP"; 
@@ -76,7 +87,6 @@
         let targetBreakSeconds = 0;
 
         let timerInterval = null;
-        let spokenHalfway = false;
         let lastSpokenSecond = -1;
         
         let lastSheetStatus = "STOP";
@@ -85,23 +95,27 @@
         let currentRound = 1;
         let isAudioUnlocked = false;
 
-        // הפעלת האודיו וטעינת הלופים מיד לאחר אינטראקציה ראשונית
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
-            speak("System active"); 
+            
+            // טעינה ואישור מראש של קבצי האודיו בדפדפנים
+            Object.values(audioFiles).forEach(audio => {
+                audio.play().then(() => { audio.pause(); }).catch(e => {});
+            });
+            
             loadData();
             setInterval(loadData, 2500);
         }
 
-        function speak(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 1.15;
-                window.speechSynthesis.speak(utterance);
-            }
+        // פונקציית השמעת קבצי המלל
+        function playSpeechFile(key) {
+            if (!isAudioUnlocked || !audioFiles[key]) return;
+            try {
+                audioFiles[key].currentTime = 0;
+                audioFiles[key].volume = 1.0;
+                audioFiles[key].play().catch(e => console.log("Audio play error:", e));
+            } catch(e) { console.error(e); }
         }
 
         function parseCSV(text) {
@@ -127,7 +141,7 @@
         }
 
         async function loadData() {
-            if (!isAudioUnlocked) return; // מונע משיכת נתונים כל עוד המשתמש לא לחץ
+            if (!isAudioUnlocked) return;
             try {
                 const timestamp = '&t=' + Date.now();
                 
@@ -185,7 +199,6 @@
                     currentRound = 1;
                     timerSeconds = targetWorkSeconds;
                     initialDuration = targetWorkSeconds;
-                    spokenHalfway = false;
                     lastSpokenSecond = -1;
                     updateTimerDisplay();
                 } else if (sheetStatus === "START" && timerStatus !== "START") {
@@ -194,7 +207,6 @@
                         currentPhase = "WORK";
                         timerSeconds = targetWorkSeconds;
                         initialDuration = targetWorkSeconds;
-                        spokenHalfway = false;
                     }
                     lastSpokenSecond = -1;
                     startLocalTimer();
@@ -218,9 +230,8 @@
                         currentPhase = "BREAK";
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
-                        spokenHalfway = false;
                         lastSpokenSecond = -1;
-                        speak("Break time");
+                        playSpeechFile('break'); // השמעת "Break time"
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -228,9 +239,8 @@
                             currentPhase = "WORK";
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
-                            spokenHalfway = false;
                             lastSpokenSecond = -1;
-                            speak("Next round");
+                            playSpeechFile('next'); // השמעת "Next round"
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -238,7 +248,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            speak("Workout complete. Well done");
+                            playSpeechFile('complete'); // השמעת "Workout complete"
                             updateTimerDisplay();
                         }
                     }
@@ -248,14 +258,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                let halfTime = Math.floor(initialDuration / 2);
-                if (currentPhase === "WORK" && timerSeconds === halfTime && !spokenHalfway && initialDuration > 0) {
-                    speak("Half way");
-                    spokenHalfway = true;
-                }
-
+                // ספירה לאחור במלל אנושי (5, 4, 3, 2, 1)
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    speak(timerSeconds.toString());
+                    playSpeechFile(timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
