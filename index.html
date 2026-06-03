@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STUDIO ALMA - LIVE BOARD SYSTEM</title>
+    <title>STUDIO ALMA - TEST BOARD</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; line-height: 1.1; }
         html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; color: white; font-family: Arial, sans-serif; }
@@ -56,7 +56,7 @@
     
     <div id="container">
         <div id="audio-auth-overlay">
-            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת</button>
+            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ובדיקת צפצופים</button>
         </div>
     </div>
     
@@ -84,11 +84,10 @@
         let isAudioUnlocked = false;
         let audioCtx = null;
 
-        // מנוע כריזה מתקדם המבוסס על AudioContext ומנוע דיבור פנימי - חסין לחסימות דפדפנים
-        function announce(text) {
+        // פונקציית צפצוף טהורה - מייצרת גל קול ישיר מחומרת המחשב/טלוויזיה ללא תלות בקבצים או הקראה
+        function playBeep(frequency, duration) {
             if (!isAudioUnlocked) return;
             try {
-                // אתחול מחדש של ערוץ השמע הישיר של המעבד במידה ונסגר
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -96,49 +95,47 @@
                     audioCtx.resume();
                 }
 
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel(); // מנקה כריזות קודמות תקועות
-                    
-                    let speech = new SpeechSynthesisUtterance(text);
-                    speech.lang = 'en-US';
-                    speech.rate = 1.1;
-                    speech.volume = 1.0;
-                    
-                    // אופטימיזציה למציאת קול נשי ברור
-                    let voices = window.speechSynthesis.getVoices();
-                    if (voices && voices.length > 0) {
-                        let femaleVoice = voices.find(v => v.lang.includes('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('google')));
-                        if (!femaleVoice) femaleVoice = voices.find(v => v.lang.includes('en'));
-                        if (femaleVoice) speech.voice = femaleVoice;
-                    }
-                    
-                    window.speechSynthesis.speak(speech);
-                }
+                let osc = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.type = 'sine'; // גל סינוס נקי
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime); // תדר הצליל (במהלך הספירה נמוך, בסיום גבוה)
+                
+                // מניעת קליקים ורעשי לוואי בסיום הצליל על ידי דעיכה מהירה של הווליום
+                gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + duration);
             } catch (e) {
-                console.error("Audio Engine Error:", e);
+                console.error("Beep Error:", e);
             }
+        }
+
+        // צפצוף קצר עבור הספירה לאחור (שניות 5 עד 1) - תדר נמוך יחסית
+        function beepCountdown() {
+            playBeep(600, 0.15);
+        }
+
+        // צפצוף ארוך וגבוה למעבר שלב (סיום זמן / התחלת מנוחה / סבב חדש)
+        function beepAlert() {
+            playBeep(1000, 0.6);
         }
 
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // יצירת אינטראקציה ישירה עם חומרת הטלוויזיה
+            // בדיקת שמע מיידית בלחיצה: 3 צפצופים מהירים כדי לאשר שכרטיס הקול עובד
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                gain.gain.setValueAtTime(0.01, audioCtx.currentTime); // צליל חריש קידוד
-                osc.start(0);
-                osc.stop(0.05);
+                setTimeout(() => playBeep(800, 0.1), 100);
+                setTimeout(() => playBeep(800, 0.1), 250);
+                setTimeout(() => playBeep(800, 0.1), 400);
             } catch(e) { console.log(e); }
-
-            // השמעת בדיקה מיידית
-            setTimeout(() => {
-                announce("System Ready");
-            }, 100);
 
             loadData();
             setInterval(loadData, 2500);
@@ -257,7 +254,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        announce("Break time"); // כריזה אנושית
+                        beepAlert(); // צפצוף מעבר ארוך למנוחה
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -266,7 +263,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            announce("Next round"); // כריזה אנושית
+                            beepAlert(); // צפצוף מעבר ארוך לסבב הבא
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -274,7 +271,10 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            announce("Workout complete. Well done"); // כריזה אנושית
+                            // 3 צפצופים ארוכים חגיגיים לסיום האימון
+                            beepAlert();
+                            setTimeout(beepAlert, 700);
+                            setTimeout(beepAlert, 1400);
                             updateTimerDisplay();
                         }
                     }
@@ -284,9 +284,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // ספירה לאחור אנושית (5, 4, 3, 2, 1)
+                // צפצוף ספירה לאחור ב-5 השניות האחרונות
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    announce(timerSeconds.toString());
+                    beepCountdown();
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
@@ -404,14 +404,6 @@
                 rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
-        }
-
-        // טעינה מוקדמת של רשימת קולות לזיכרון הדפדפן בטלוויזיה
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-            }
         }
 
         setInterval(() => {
