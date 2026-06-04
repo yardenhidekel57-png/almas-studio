@@ -56,7 +56,7 @@
     
     <div id="container">
         <div id="audio-auth-overlay">
-            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד וטיימר צפצופים</button>
+            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת</button>
         </div>
     </div>
     
@@ -78,15 +78,14 @@
         let timerInterval = null;
         let lastSpokenSecond = -1;
         let lastSheetStatus = "STOP";
-        let isHalfwaySignaled = false;
 
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
         let isAudioUnlocked = false;
         let audioCtx = null;
 
-        // פונקציית צפצוף חסינה ישירות מול כרטיס הקול
-        function playBeep(frequency, duration, volume = 0.6) {
+        // מנוע סאונד ישיר וחסין באגים - מייצר צפצוף דיגיטלי ישירות על המעבד מבלי לטעון קבצים
+        function playBeep(frequency, duration) {
             if (!isAudioUnlocked) return;
             try {
                 if (!audioCtx) {
@@ -105,7 +104,7 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
                 
-                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
                 osc.start(audioCtx.currentTime);
@@ -115,38 +114,25 @@
             }
         }
 
-        function beepCountdown() { playBeep(650, 0.12); }
-        function beepAlert() { playBeep(950, 0.6); }
-        function beepHalfway() {
-            playBeep(1100, 0.1);
-            setTimeout(() => playBeep(1100, 0.1), 180);
+        // צפצוף קצר לספירה לאחור (שניות 5 עד 1)
+        function beepCountdown() {
+            playBeep(650, 0.12);
         }
 
-        // מנגנון עקיפה אקטיבי: מייצר גל שקט קבוע שמחזיק את הדפדפן ער לגמרי
-        function startKeepAliveLoop() {
-            setInterval(() => {
-                if (audioCtx && audioCtx.state === 'running') {
-                    // צפצוף בתדר אפסי (לא נשמע לאוזן) שמונע מכרום להרדים את ערוץ השמע
-                    playBeep(20, 0.02, 0.01); 
-                }
-            }, 10000); 
+        // צפצוף ארוך וגבוה למעבר שלבים (מנוחה או סבב חדש)
+        function beepAlert() {
+            playBeep(950, 0.5);
         }
 
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
+            // אישור קולי מיידי שהמערכת נפתחה ומוכנה לעבודה
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                
-                // צפצוף פתיחה מיידי וחזק לאישור פתיחת הערוץ בכרום
-                playBeep(880, 0.3);
-                
-                // הפעלת לולאת השמירה מפני שינה
-                startKeepAliveLoop();
+                setTimeout(() => playBeep(800, 0.08), 100);
+                setTimeout(() => playBeep(1000, 0.15), 220);
             } catch(e) { console.log(e); }
 
             loadData();
@@ -179,25 +165,32 @@
             if (!isAudioUnlocked) return;
             try {
                 const timestamp = '&t=' + Date.now();
+                
                 const resTimer = await fetch(TIMER_URL + timestamp);
                 const textTimer = await resTimer.text();
                 if (textTimer && textTimer.trim().length > 0) {
-                    parseTimerSettings(parseCSV(textTimer));
+                    const rowsTimer = parseCSV(textTimer);
+                    parseTimerSettings(rowsTimer);
                 }
+
                 const resMain = await fetch(MAIN_URL + timestamp);
                 const textMain = await resMain.text();
                 if (textMain && textMain.trim().length > 0) {
-                    parse(parseCSV(textMain));
+                    const rowsMain = parseCSV(textMain);
+                    parse(rowsMain);
                 }
+
             } catch (e) { console.error(e); }
         }
 
         function parseTimerSettings(rows) {
             let sheetStatus = "STOP";
+
             for (let i = 0; i < rows.length; i++) {
                 if (!rows[i] || rows[i].length < 2) continue;
                 let label = rows[i][0] ? rows[i][0].trim() : "";
                 let value = rows[i][1] ? rows[i][1].trim() : "";
+                
                 if (label === "זמן טיימר בדקות") {
                     let val = parseFloat(value);
                     if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
@@ -206,7 +199,9 @@
                     let val = parseFloat(value);
                     if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
                 }
-                if (label === "מצב נוכחי") sheetStatus = value.toUpperCase();
+                if (label === "מצב נוכחי") {
+                    sheetStatus = value.toUpperCase();
+                }
             }
 
             if (timerStatus === "STOP" && lastSheetStatus !== "STOP" && sheetStatus !== "START" && sheetStatus !== "STOP") {
@@ -218,18 +213,29 @@
 
             if (sheetStatus !== lastSheetStatus) {
                 if (sheetStatus === "RESET") {
-                    clearInterval(timerInterval); timerInterval = null;
-                    timerStatus = "STOP"; currentPhase = "WORK"; currentRound = 1;
-                    timerSeconds = targetWorkSeconds; initialDuration = targetWorkSeconds;
-                    lastSpokenSecond = -1; isHalfwaySignaled = false; updateTimerDisplay();
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    timerStatus = "STOP";
+                    currentPhase = "WORK";
+                    currentRound = 1;
+                    timerSeconds = targetWorkSeconds;
+                    initialDuration = targetWorkSeconds;
+                    lastSpokenSecond = -1;
+                    updateTimerDisplay();
                 } else if (sheetStatus === "START" && timerStatus !== "START") {
                     timerStatus = "START";
                     if (timerSeconds <= 0 || timerSeconds === targetWorkSeconds) {
-                        currentPhase = "WORK"; timerSeconds = targetWorkSeconds; initialDuration = targetWorkSeconds;
+                        currentPhase = "WORK";
+                        timerSeconds = targetWorkSeconds;
+                        initialDuration = targetWorkSeconds;
                     }
-                    lastSpokenSecond = -1; isHalfwaySignaled = false; startLocalTimer();
+                    lastSpokenSecond = -1;
+                    startLocalTimer();
                 } else if (sheetStatus === "STOP" && timerStatus === "START") {
-                    clearInterval(timerInterval); timerInterval = null; timerStatus = "STOP"; updateTimerDisplay();
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    timerStatus = "STOP";
+                    updateTimerDisplay();
                 }
                 lastSheetStatus = sheetStatus;
             }
@@ -242,16 +248,32 @@
             timerInterval = setInterval(() => {
                 if (timerSeconds <= 0) {
                     if (currentPhase === "WORK" && targetBreakSeconds > 0) {
-                        currentPhase = "BREAK"; timerSeconds = targetBreakSeconds; initialDuration = targetBreakSeconds;
-                        lastSpokenSecond = -1; isHalfwaySignaled = false; beepAlert(); updateTimerDisplay();
+                        currentPhase = "BREAK";
+                        timerSeconds = targetBreakSeconds;
+                        initialDuration = targetBreakSeconds;
+                        lastSpokenSecond = -1;
+                        beepAlert(); // צפצוף מעבר ארוך למנוחה
+                        updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
-                            currentRound++; currentPhase = "WORK"; timerSeconds = targetWorkSeconds; initialDuration = targetWorkSeconds;
-                            lastSpokenSecond = -1; isHalfwaySignaled = false; beepAlert(); updateTimerDisplay();
+                            currentRound++;
+                            currentPhase = "WORK";
+                            timerSeconds = targetWorkSeconds;
+                            initialDuration = targetWorkSeconds;
+                            lastSpokenSecond = -1;
+                            beepAlert(); // צפצוף מעבר ארוך לסבב הבא
+                            updateTimerDisplay();
                         } else {
-                            clearInterval(timerInterval); timerInterval = null; timerStatus = "STOP";
-                            currentPhase = "WORK"; currentRound = 1; isHalfwaySignaled = false;
-                            beepAlert(); setTimeout(beepAlert, 600); setTimeout(beepAlert, 1200); updateTimerDisplay();
+                            clearInterval(timerInterval);
+                            timerInterval = null;
+                            timerStatus = "STOP";
+                            currentPhase = "WORK";
+                            currentRound = 1;
+                            // 3 צפצופים חגיגיים לסיום האימון המלא
+                            beepAlert();
+                            setTimeout(beepAlert, 600);
+                            setTimeout(beepAlert, 1200);
+                            updateTimerDisplay();
                         }
                     }
                     return;
@@ -260,14 +282,7 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                if (currentPhase === "WORK" && timerStatus === "START") {
-                    let halfTime = Math.floor(initialDuration / 2);
-                    if (timerSeconds === halfTime && !isHalfwaySignaled) {
-                        beepHalfway();
-                        isHalfwaySignaled = true;
-                    }
-                }
-
+                // צפצופי ספירה לאחור ב-5 השניות האחרונות של העבודה או המנוחה
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
                     beepCountdown();
                     lastSpokenSecond = timerSeconds;
@@ -278,26 +293,39 @@
         function updateTimerDisplay() {
             const timerEl = document.getElementById('workout-timer');
             const roundEl = document.getElementById('round-counter');
-            let mins = Math.floor(timerSeconds / 60); let secs = timerSeconds % 60;
+            
+            let mins = Math.floor(timerSeconds / 60);
+            let secs = timerSeconds % 60;
+            
             let prefix = currentPhase === "BREAK" ? "מנוחה: " : "";
             timerEl.innerText = `${prefix}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
             roundEl.innerText = `סבב ${currentRound} מתוך ${TOTAL_ROUNDS}`;
 
             if (timerStatus === "START") {
-                if (currentPhase === "BREAK") { timerEl.className = "break"; } 
-                else {
+                if (currentPhase === "BREAK") {
+                    timerEl.className = "break";
+                } else {
                     timerEl.className = "running";
-                    if (timerSeconds <= Math.floor(initialDuration / 2)) timerEl.classList.add("halfway");
+                    let halfTime = Math.floor(initialDuration / 2);
+                    if (timerSeconds <= halfTime) {
+                        timerEl.classList.add("halfway");
+                    }
                 }
-            } else { timerEl.className = ""; }
+            } else {
+                timerEl.className = "";
+            }
         }
 
         function parse(rows) {
-            const now = new Date(); const nowMin = (now.getHours() * 60) + now.getMinutes();
+            const now = new Date();
+            const nowMin = (now.getHours() * 60) + now.getMinutes();
             let sessions = [], current = null;
+
             rows.forEach(row => {
                 if (!row || row.length === 0) return;
                 let firstCell = row[0] ? row[0].trim() : "";
+                
                 if (firstCell.includes("אימון")) {
                     const m = firstCell.match(/(\d{1,2}):(\d{2})/);
                     if (m) {
@@ -305,53 +333,80 @@
                         current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
                     }
                 } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
-                    if (!["זמן טיימר בדקות", "זמן הפסקה בדקות", "מצב נוכחי"].includes(firstCell)) current.trainees.push(row);
+                    if (!["זמן טיימר בדקות", "זמן הפסקה בדקות", "מצב נוכחי"].includes(firstCell)) {
+                        current.trainees.push(row);
+                    }
                 }
             });
             if (current) sessions.push(current);
+
             let active = null;
             for (let i = 0; i < sessions.length; i++) {
-                let s = sessions[i]; let nextS = sessions[i+1];
-                if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) { if (nowMin < s.start + 65) active = s; }
+                let s = sessions[i];
+                let nextS = sessions[i+1];
+                if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) {
+                    if (nowMin < s.start + 65) active = s;
+                }
             }
+
             render(active);
         }
 
         function render(active) {
             const container = document.getElementById('container');
             if (!active) {
-                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">אין אימון פעיל כרגע</div>'; return;
+                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">אין אימון פעיל כרגע</div>';
+                return;
             }
             container.innerHTML = '';
+            
             const trainees = active.trainees.filter(t => t[0]);
             const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
-            let rowDiv = document.createElement('div'); rowDiv.className = 'row';
+            let rowDiv = document.createElement('div');
+            rowDiv.className = 'row';
 
             trainees.forEach((t, i) => {
-                if (i > 0 && i % max === 0) { container.appendChild(rowDiv); rowDiv = document.createElement('div'); rowDiv.className = 'row'; }
+                if (i > 0 && i % max === 0) {
+                    container.appendChild(rowDiv);
+                    rowDiv = document.createElement('div');
+                    rowDiv.className = 'row';
+                }
+                
                 let exs = "";
                 for (let m = 1; m < t.length; m++) {
-                    let val = t[m] ? t[m].trim() : ""; if (val === "" || val === "..." || val === "null") continue;
+                    let val = t[m] ? t[m].trim() : "";
+                    if (val === "" || val === "..." || val === "null") continue;
+
                     if (val.length > 4 || (!val.includes('.') && !val.includes(',') && !val.toLowerCase().includes('k'))) {
-                        let name = val; let weight = ""; let reps = "";
+                        let name = val;
+                        let weight = "";
+                        let reps = "";
+
                         for(let k=1; k<=2; k++) {
                             let next = t[m+k] ? t[m+k].trim().toLowerCase() : "";
-                            if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) weight = t[m+k].trim();
-                            else if (next.includes('.') || next.includes(',') || (next.match(/^\d+$/) && next.length > 0)) reps = t[m+k].trim();
+                            if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) {
+                                weight = t[m+k].trim();
+                            } else if (next.includes('.') || next.includes(',') || (next.match(/^\d+$/) && next.length > 0)) {
+                                reps = t[m+k].trim();
+                            }
                         }
+
                         reps = reps.replace(/,/g, 'x').replace(/\./g, 'x');
                         exs += `<div class="ex-row"><div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div><div class="reps">${reps || '--'}</div></div>`;
                         m += 2;
                     }
                 }
-                const card = document.createElement('div'); card.className = 'card';
-                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`; rowDiv.appendChild(card);
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`;
+                rowDiv.appendChild(card);
             });
             container.appendChild(rowDiv);
         }
 
         setInterval(() => {
-            const d = new Date(); document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
+            const d = new Date();
+            document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
         }, 1000);
     </script>
 </body>
