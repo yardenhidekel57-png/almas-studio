@@ -56,13 +56,11 @@
     
     <div id="container">
         <div id="audio-auth-overlay">
-            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת</button>
+            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד וטיימר צפצופים</button>
         </div>
     </div>
     
     <div class="footer-credit">Developed by Gal E</div>
-
-    <audio id="tts-player" style="display: none;"></audio>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
@@ -80,40 +78,73 @@
         let timerInterval = null;
         let lastSpokenSecond = -1;
         let lastSheetStatus = "STOP";
+        let isHalfwaySignaled = false; // מונע כפל צפצופים באותה השנייה של חצי הדרך
 
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
         let isAudioUnlocked = false;
+        let audioCtx = null;
 
-        // מנגנון עקיפה דינמי: הופך טקסט לקובץ שמע אמיתי דרך גוגל ומזרים אותו לטלוויזיה
-        function speakGoogle(text) {
+        // מנוע פעימות קול דיגיטלי ישיר
+        function playBeep(frequency, duration) {
             if (!isAudioUnlocked) return;
             try {
-                const player = document.getElementById('tts-player');
-                // יצירת הקישור הישיר לקובץ האודיו של גוגל
-                const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(text)}`;
-                
-                player.src = googleTtsUrl;
-                player.muted = false;
-                
-                // פקודת ניגון ישירה שעוקפת את מגבלות ה-Text-to-Speech של הטלוויזיה
-                let playPromise = player.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Playback engine block bypassed, retrying...", error);
-                    });
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                let osc = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                
+                gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + duration);
             } catch (e) {
-                console.error("TTS Engine Error:", e);
+                console.error("Beep Error:", e);
             }
+        }
+
+        // צפצוף קצר וחד לספירה לאחור (5, 4, 3, 2, 1)
+        function beepCountdown() {
+            playBeep(650, 0.12);
+        }
+
+        // צפצוף ארוך ומאסיבי למעבר שלבים (סיום זמן, התחלת מנוחה, החלפת סבב)
+        function beepAlert() {
+            playBeep(950, 0.6);
+        }
+
+        // צפצוף כפול מהיר וייחודי לחצי הדרך
+        function beepHalfway() {
+            playBeep(1100, 0.1);
+            setTimeout(() => playBeep(1100, 0.1), 180);
         }
 
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            // הפעלת נגן השמע באמצעות מילת בדיקה מיידית בלחיצה
-            speakGoogle("System Ready");
+            // "זריקת מרץ" לכרטיס הקול כדי להעיר אותו לגמרי מהשנייה הראשונה מול הדפדפן
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                // 3 צפצופי אישור מהירים ומיידיים שמבטיחים שהערוץ פתוח
+                setTimeout(() => playBeep(700, 0.05), 100);
+                setTimeout(() => playBeep(850, 0.05), 200);
+                setTimeout(() => playBeep(1000, 0.1), 300);
+            } catch(e) { console.log(e); }
 
             loadData();
             setInterval(loadData, 2500);
@@ -201,6 +232,7 @@
                     timerSeconds = targetWorkSeconds;
                     initialDuration = targetWorkSeconds;
                     lastSpokenSecond = -1;
+                    isHalfwaySignaled = false;
                     updateTimerDisplay();
                 } else if (sheetStatus === "START" && timerStatus !== "START") {
                     timerStatus = "START";
@@ -210,6 +242,7 @@
                         initialDuration = targetWorkSeconds;
                     }
                     lastSpokenSecond = -1;
+                    isHalfwaySignaled = false;
                     startLocalTimer();
                 } else if (sheetStatus === "STOP" && timerStatus === "START") {
                     clearInterval(timerInterval);
@@ -232,7 +265,8 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        speakGoogle("Rest time"); // כריזה קולית למנוחה
+                        isHalfwaySignaled = false;
+                        beepAlert(); // צפצוף מעבר למנוחה
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -241,7 +275,8 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            speakGoogle("Next round"); // כריזה קולית לסבב הבא
+                            isHalfwaySignaled = false;
+                            beepAlert(); // צפצוף מעבר לסבב הבא
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -249,7 +284,11 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            speakGoogle("Workout complete. Well done"); // כריזה קולית לסיום האימון
+                            isHalfwaySignaled = false;
+                            // 3 צפצופים ארוכים לסיום האימון
+                            beepAlert();
+                            setTimeout(beepAlert, 600);
+                            setTimeout(beepAlert, 1200);
                             updateTimerDisplay();
                         }
                     }
@@ -259,9 +298,18 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // ספירה לאחור אנושית בקול ברור (5, 4, 3, 2, 1)
+                // חישוב חצי הדרך ובדיקה מדויקת בזמן אמת של שלב העבודה
+                if (currentPhase === "WORK" && timerStatus === "START") {
+                    let halfTime = Math.floor(initialDuration / 2);
+                    if (timerSeconds === halfTime && !isHalfwaySignaled) {
+                        beepHalfway(); // הפעלת הצפצוף הכפול הייחודי לחצי הדרך
+                        isHalfwaySignaled = true; // מבטיח שיצפצף רק פעם אחת בדיוק בחצי
+                    }
+                }
+
+                // צפצופי ספירה לאחור ב-5 השניות האחרונות
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    speakGoogle(timerSeconds.toString());
+                    beepCountdown();
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
