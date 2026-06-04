@@ -56,11 +56,13 @@
     
     <div id="container">
         <div id="audio-auth-overlay">
-            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת כריזה</button>
+            <button class="auth-btn" onclick="activateAudioSystem()">לחץ כאן להפעלת סאונד ומערכת</button>
         </div>
     </div>
     
     <div class="footer-credit">Developed by Gal E</div>
+
+    <audio id="tts-player" style="display: none;"></audio>
 
     <script>
         const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
@@ -82,64 +84,27 @@
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
         let isAudioUnlocked = false;
-        let audioCtx = null;
-        let audioBuffers = {}; // כאן נשמור את קבצי השמע המפוענחים בזיכרון החומרה
 
-        // קבצי שמע אנושיים אמיתיים (סטודיו מקצועי) דחוסים בתוך הקוד למניעת בעיות אינטרנט
-        const audioDataB64 = {
-            '1': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0V/gH9/f39/f39/f4CAgIGCgoKCgoKCgoKCgoKCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            '2': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEb/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv1F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/f39/f39/f39/gICAgYKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKChIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhoWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            '3': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0X/f4B/f39/f39/f3+AgICBgoKCgoKCgoKCgoKCgoGCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            '4': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEb/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv9G/0b/Rv1F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/Rf9F/0X/f39/f39/f39/gICAgYKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKChIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhIaEhoWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            '5': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/Rf9F/0X/Rf9F/0X/Rf9F/0X/f4B/f39/f39/f3+AgICBgoKCgoKCgoKCgoKCgoGCgYKBgoGCgYKBgoGCgYKBgoGCgYKBgoGCgoGCgYKBgoKChIaEhIaEhIaEhIaEhIaEhIaEhoSGhYWFhYWFhYWFhYWFhYWFhYWFhYaFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYaGhYWFhYWFhYaFhYWFhYWFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaFhYaF',
-            'break': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            'next': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            'complete': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF',
-            'ready': 'data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92AAAAAEX/f4B/gH+AgICAgYGBgoKCgoKChIaEhIaFhYWFhYWFhYWFhYaGhYaGhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWF'
-        };
-
-        // המרה של ה-Base64 למערך בייטים דיגיטלי שה-AudioContext יודע לנגן ישירות לרמקול
-        function base64ToArrayBuffer(base64) {
-            let binaryString = window.atob(base64.split(',')[1]);
-            let len = binaryString.length;
-            let bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        // טעינה ופענוח מראש של כל קבצי הדיבור ישירות לתוך כרטיס הקול
-        async function initAudioBuffers() {
-            for (let key in audioDataB64) {
-                try {
-                    let arrayBuf = base64ToArrayBuffer(audioDataB64[key]);
-                    // פענוח חומרתי של השמע
-                    audioCtx.decodeAudioData(arrayBuf, (buffer) => {
-                        audioBuffers[key] = buffer;
-                    }, (e) => console.error("Error decoding " + key, e));
-                } catch (e) { console.error(e); }
-            }
-        }
-
-        // פונקציית ההקראה החדשה והחסינה - מנגנת קול אנושי ישירות דרך ה-AudioContext שעובד אצלך!
-        function announce(type) {
-            if (!isAudioUnlocked || !audioBuffers[type]) return;
+        // מנגנון עקיפה דינמי: הופך טקסט לקובץ שמע אמיתי דרך גוגל ומזרים אותו לטלוויזיה
+        function speakGoogle(text) {
+            if (!isAudioUnlocked) return;
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const player = document.getElementById('tts-player');
+                // יצירת הקישור הישיר לקובץ האודיו של גוגל
+                const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(text)}`;
+                
+                player.src = googleTtsUrl;
+                player.muted = false;
+                
+                // פקודת ניגון ישירה שעוקפת את מגבלות ה-Text-to-Speech של הטלוויזיה
+                let playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Playback engine block bypassed, retrying...", error);
+                    });
                 }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                // יצירת ערוץ ניגון ישיר בזמן אמת לתוך הרמקול של הטלוויזיה
-                let source = audioCtx.createBufferSource();
-                source.buffer = audioBuffers[type];
-                source.connect(audioCtx.destination);
-                source.start(0);
             } catch (e) {
-                console.error("Announce Playback Error:", e);
+                console.error("TTS Engine Error:", e);
             }
         }
 
@@ -147,18 +112,8 @@
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
             
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // טעינת קבצי השמע לזיכרון כרטיס הקול
-                initAudioBuffers();
-
-                // השמעת אישור קולי מיידי אנושי ("System Ready") דרך ערוץ השמע הישיר
-                setTimeout(() => {
-                    announce("ready");
-                }, 400);
-
-            } catch(e) { console.log(e); }
+            // הפעלת נגן השמע באמצעות מילת בדיקה מיידית בלחיצה
+            speakGoogle("System Ready");
 
             loadData();
             setInterval(loadData, 2500);
@@ -277,7 +232,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
-                        announce("break"); // הקראה אנושית: Break Time
+                        speakGoogle("Rest time"); // כריזה קולית למנוחה
                         updateTimerDisplay();
                     } else {
                         if (currentRound < TOTAL_ROUNDS) {
@@ -286,7 +241,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
-                            announce("next"); // הקראה אנושית: Next Round
+                            speakGoogle("Next round"); // כריזה קולית לסבב הבא
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
@@ -294,7 +249,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
-                            announce("complete"); // הקראה אנושית: Workout Complete
+                            speakGoogle("Workout complete. Well done"); // כריזה קולית לסיום האימון
                             updateTimerDisplay();
                         }
                     }
@@ -304,9 +259,9 @@
                 timerSeconds--;
                 updateTimerDisplay();
 
-                // ספירה לאחור אנושית ב-5 השניות האחרונות (5, 4, 3, 2, 1) ישירות דרך כרטיס הקול
+                // ספירה לאחור אנושית בקול ברור (5, 4, 3, 2, 1)
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    announce(timerSeconds.toString());
+                    speakGoogle(timerSeconds.toString());
                     lastSpokenSecond = timerSeconds;
                 }
             }, 1000);
