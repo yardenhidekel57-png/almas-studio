@@ -78,6 +78,7 @@
         let timerInterval = null;
         let lastSpokenSecond = -1;
         let lastSheetStatus = "STOP";
+        let isHalfwaySignaled = false; // משתנה שמונע כפל צפצופים באותה השנייה של חצי הדרך
 
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
@@ -85,7 +86,7 @@
         let audioCtx = null;
 
         // מנוע סאונד ישיר וחסין באגים - מייצר צפצוף דיגיטלי ישירות על המעבד מבלי לטעון קבצים
-        function playBeep(frequency, duration) {
+        function playBeep(frequency, duration, volume = 0.6) {
             if (!isAudioUnlocked) return;
             try {
                 if (!audioCtx) {
@@ -104,7 +105,7 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
                 
-                gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
                 osc.start(audioCtx.currentTime);
@@ -124,6 +125,22 @@
             playBeep(950, 0.5);
         }
 
+        // צפצוף כפול מהיר וייחודי לחצי הדרך
+        function beepHalfway() {
+            playBeep(1100, 0.1);
+            setTimeout(() => playBeep(1100, 0.1), 180);
+        }
+
+        // לולאת שמירה מפני שינה - משאירה את הדפדפן וכרטיס הקול עירניים לגמרי מהשנייה הראשונה
+        function startKeepAliveLoop() {
+            setInterval(() => {
+                if (audioCtx && audioCtx.state === 'running') {
+                    // צפצוף בתדר נמוך מאוד שלא נשמע לאוזן אנושית, אך שומר על הערוץ דרוך
+                    playBeep(20, 0.02, 0.01); 
+                }
+            }, 10000);
+        }
+
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
@@ -131,8 +148,15 @@
             // אישור קולי מיידי שהמערכת נפתחה ומוכנה לעבודה
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                setTimeout(() => playBeep(800, 0.08), 100);
-                setTimeout(() => playBeep(1000, 0.15), 220);
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                // צפצוף פתיחה חזק וברור
+                playBeep(880, 0.25);
+                
+                // הפעלת לולאת שמירת ערוץ השמע פתוח
+                startKeepAliveLoop();
             } catch(e) { console.log(e); }
 
             loadData();
@@ -221,6 +245,7 @@
                     timerSeconds = targetWorkSeconds;
                     initialDuration = targetWorkSeconds;
                     lastSpokenSecond = -1;
+                    isHalfwaySignaled = false;
                     updateTimerDisplay();
                 } else if (sheetStatus === "START" && timerStatus !== "START") {
                     timerStatus = "START";
@@ -230,6 +255,7 @@
                         initialDuration = targetWorkSeconds;
                     }
                     lastSpokenSecond = -1;
+                    isHalfwaySignaled = false;
                     startLocalTimer();
                 } else if (sheetStatus === "STOP" && timerStatus === "START") {
                     clearInterval(timerInterval);
@@ -252,6 +278,7 @@
                         timerSeconds = targetBreakSeconds;
                         initialDuration = targetBreakSeconds;
                         lastSpokenSecond = -1;
+                        isHalfwaySignaled = false;
                         beepAlert(); // צפצוף מעבר ארוך למנוחה
                         updateTimerDisplay();
                     } else {
@@ -261,6 +288,7 @@
                             timerSeconds = targetWorkSeconds;
                             initialDuration = targetWorkSeconds;
                             lastSpokenSecond = -1;
+                            isHalfwaySignaled = false;
                             beepAlert(); // צפצוף מעבר ארוך לסבב הבא
                             updateTimerDisplay();
                         } else {
@@ -269,6 +297,7 @@
                             timerStatus = "STOP";
                             currentPhase = "WORK";
                             currentRound = 1;
+                            isHalfwaySignaled = false;
                             // 3 צפצופים חגיגיים לסיום האימון המלא
                             beepAlert();
                             setTimeout(beepAlert, 600);
@@ -281,6 +310,15 @@
 
                 timerSeconds--;
                 updateTimerDisplay();
+
+                // חישוב חצי הדרך המדויק וביצוע צפצוף רק בשלב העבודה (WORK)
+                if (currentPhase === "WORK" && timerStatus === "START") {
+                    let halfTime = Math.floor(initialDuration / 2);
+                    if (timerSeconds === halfTime && !isHalfwaySignaled) {
+                        beepHalfway(); // הפעלת הצפצוף הכפול הייחודי לחצי הדרך
+                        isHalfwaySignaled = true; // חסימת כפל צפצופים באותה השנייה
+                    }
+                }
 
                 // צפצופי ספירה לאחור ב-5 השניות האחרונות של העבודה או המנוחה
                 if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
