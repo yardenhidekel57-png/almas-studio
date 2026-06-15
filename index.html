@@ -63,13 +63,9 @@
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
-        // הקישור הראשי של הפרסום (מבוסס על מה שהעתקת מחלון גוגל שיטס)
-        const PUBLISHED_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pubhtml';
-
-        // בניית הקישורים האוטומטית עם ה-GID הנכון והמעודכן ששלחת
-        const BASE_CSV_URL = PUBLISHED_URL.replace('/pubhtml', '/pub?output=csv');
-        const MAIN_URL = `${BASE_CSV_URL}&gid=0`;
-        const TIMER_URL = `${BASE_CSV_URL}&gid=631039771`; // עודכן ל-GID הנכון של הטיימר!
+        // הקישורים הישירים והמתוקנים לגיליונות ה-CSV של גוגל
+        const TIMER_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pub?gid=631039771&single=true&output=csv';
+        const MAIN_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pub?gid=0&single=true&output=csv';
 
         let timerSeconds = 0;
         let initialDuration = 0;
@@ -197,7 +193,7 @@
         function parseTimerSettings(rows) {
             if (!rows || rows.length < 3) return;
 
-            // משיכה ישירה לפי שורות (עמודה B) - חסין ג'יבריש ובעיות קידוד
+            // משיכה ישירה לפי שורות חסינת ג'יבריש
             if (rows[0] && rows[0][1]) {
                 let val = parseFloat(rows[0][1].trim());
                 if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
@@ -271,129 +267,4 @@
             updateTimerDisplay();
             
             timerInterval = setInterval(() => {
-                if (timerSeconds <= 0) {
-                    if (currentPhase === "WORK" && targetBreakSeconds > 0) {
-                        currentPhase = "BREAK";
-                        timerSeconds = targetBreakSeconds;
-                        initialDuration = targetBreakSeconds;
-                        lastSpokenSecond = -1;
-                        isHalfwaySignaled = false;
-                        beepAlert(); 
-                        updateTimerDisplay();
-                    } else {
-                        if (currentRound < TOTAL_ROUNDS) {
-                            currentRound++;
-                            lastSheetRound = currentRound; 
-                            currentPhase = "WORK";
-                            timerSeconds = targetWorkSeconds;
-                            initialDuration = targetWorkSeconds;
-                            lastSpokenSecond = -1;
-                            isHalfwaySignaled = false;
-                            beepAlert(); 
-                            updateTimerDisplay();
-                        } else {
-                            clearInterval(timerInterval);
-                            timerInterval = null;
-                            timerStatus = "STOP";
-                            currentPhase = "WORK";
-                            currentRound = 1;
-                            lastSheetRound = 1;
-                            isHalfwaySignaled = false;
-                            beepAlert();
-                            setTimeout(beepAlert, 600);
-                            setTimeout(beepAlert, 1200);
-                            updateTimerDisplay();
-                        }
-                    }
-                    return;
-                }
-
-                timerSeconds--;
-                updateTimerDisplay();
-
-                if (currentPhase === "WORK" && timerStatus === "START") {
-                    let halfTime = Math.floor(initialDuration / 2);
-                    if (timerSeconds === halfTime && !isHalfwaySignaled) {
-                        beepHalfway(); 
-                        isHalfwaySignaled = true; 
-                    }
-                }
-
-                if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
-                    beepCountdown();
-                    lastSpokenSecond = timerSeconds;
-                }
-            }, 1000);
-        }
-
-        function updateTimerDisplay() {
-            const timerEl = document.getElementById('workout-timer');
-            const roundEl = document.getElementById('round-counter');
-            
-            let mins = Math.floor(timerSeconds / 60);
-            let secs = timerSeconds % 60;
-            
-            let prefix = currentPhase === "BREAK" ? "מנוחה: " : "";
-            timerEl.innerText = `${prefix}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-            roundEl.innerText = `סבב ${currentRound} מתוך ${TOTAL_ROUNDS}`;
-
-            if (timerStatus === "START") {
-                if (currentPhase === "BREAK") {
-                    timerEl.className = "break";
-                } else {
-                    timerEl.className = "running";
-                    let halfTime = Math.floor(initialDuration / 2);
-                    if (timerSeconds <= halfTime) {
-                        timerEl.classList.add("halfway");
-                    }
-                }
-            } else {
-                timerEl.className = "";
-            }
-        }
-
-        function parse(rows) {
-            const now = new Date();
-            const nowMin = (now.getHours() * 60) + now.getMinutes();
-            let sessions = [], current = null;
-
-            rows.forEach(row => {
-                if (!row || row.length === 0) return;
-                
-                let firstCell = row[0] ? row[0].trim() : "";
-                if (firstCell.includes("אימון")) {
-                    const m = firstCell.match(/(\d{1,2}):(\d{2})/);
-                    if (m) {
-                        if (current) sessions.push(current);
-                        current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
-                    }
-                } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
-                    if (rows.indexOf(row) > 4) {
-                        current.trainees.push(row);
-                    }
-                }
-            });
-            if (current) sessions.push(current);
-
-            let active = null;
-            for (let i = 0; i < sessions.length; i++) {
-                let s = sessions[i];
-                let nextS = sessions[i+1];
-                if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) {
-                    if (nowMin < s.start + 65) active = s;
-                }
-            }
-            render(active);
-        }
-
-        function render(active) {
-            const container = document.getElementById('container');
-            if (!active) {
-                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">אין אימון פעיל כרגע</div>';
-                return;
-            }
-            container.innerHTML = '';
-            
-            const trainees = active.trainees.filter(t => t[0]);
-            const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.
+                if (timerSeconds <= 0)
