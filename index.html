@@ -144,7 +144,7 @@
             } catch(e) { console.log(e); }
 
             loadData();
-            setInterval(loadData, 2500);
+            setInterval(loadData, 2000); // סנכרון מהיר כל 2 שניות
         }
 
         function parseCSV(text) {
@@ -202,18 +202,18 @@
                 
                 if (!label) continue;
 
-                if (label === "זמן טיימר בדקות") {
+                if (label.includes("זמן טיימר")) {
                     let val = parseFloat(value);
                     if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
                 }
-                else if (label === "זמן הפסקה בדקות") {
+                else if (label.includes("זמן הפסקה")) {
                     let val = parseFloat(value);
                     if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
                 }
-                else if (label === "מצב נוכחי") {
+                else if (label.includes("מצב נוכחי")) {
                     sheetStatus = value.toUpperCase();
                 }
-                else if (label === "סבב נוכחי") {
+                else if (label.includes("סבב נוכחי")) {
                     let val = parseInt(value);
                     if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
                         roundFromSheet = val;
@@ -221,7 +221,7 @@
                 }
             }
 
-            // האזנה קבועה לשינוי סבב
+            // עדכון סבב מיידי - עובד גם בסטופ וגם בסטארט!
             if (roundFromSheet !== lastSheetRound) {
                 currentRound = roundFromSheet;
                 lastSheetRound = roundFromSheet;
@@ -241,7 +241,7 @@
                     timerInterval = null;
                     timerStatus = "STOP";
                     currentPhase = "WORK";
-                    currentRound = roundFromSheet; // מתחיל מהסבב שמוגדר בשיטס
+                    currentRound = roundFromSheet; 
                     timerSeconds = targetWorkSeconds;
                     initialDuration = targetWorkSeconds;
                     lastSpokenSecond = -1;
@@ -370,7 +370,8 @@
                         current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
                     }
                 } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
-                    if (!["זמן טיימר בדקות", "זמן הפסקה בדקות", "מצב נוכחי", "סבב נוכחי"].includes(firstCell)) {
+                    // התעלמות משורות הגדרת הטיימר הדינמיות
+                    if (!firstCell.includes("זמן טיימר") && !firstCell.includes("זמן הפסקה") && !firstCell.includes("מצב נוכחי") && !firstCell.includes("סבב נוכחי")) {
                         current.trainees.push(row);
                     }
                 }
