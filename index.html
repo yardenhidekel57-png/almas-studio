@@ -63,9 +63,9 @@
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
-        // הקישורים הישירים והמתוקנים לגיליונות ה-CSV של גוגל
-        const TIMER_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pub?gid=631039771&single=true&output=csv';
-        const MAIN_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pub?gid=0&single=true&output=csv';
+        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
+        const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+        const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
 
         let timerSeconds = 0;
         let initialDuration = 0;
@@ -78,14 +78,14 @@
         let timerInterval = null;
         let lastSpokenSecond = -1;
         let lastSheetStatus = "STOP";
-        let isHalfwaySignaled = false;
+        let isHalfwaySignaled = false; // משתנה שמונע כפל צפצופים באותה השנייה של חצי הדרך
 
         const TOTAL_ROUNDS = 6; 
         let currentRound = 1;
-        let lastSheetRound = 1; 
         let isAudioUnlocked = false;
         let audioCtx = null;
 
+        // מנוע סאונד ישיר וחסין באגים - מייצר צפצוף דיגיטלי ישירות על המעבד מבלי לטעון קבצים
         function playBeep(frequency, duration, volume = 0.6) {
             if (!isAudioUnlocked) return;
             try {
@@ -115,17 +115,27 @@
             }
         }
 
-        function beepCountdown() { playBeep(650, 0.12); }
-        function beepAlert() { playBeep(950, 0.5); }
-        
+        // צפצוף קצר לספירה לאחור (שניות 5 עד 1)
+        function beepCountdown() {
+            playBeep(650, 0.12);
+        }
+
+        // צפצוף ארוך וגבוה למעבר שלבים (מנוחה או סבב חדש)
+        function beepAlert() {
+            playBeep(950, 0.5);
+        }
+
+        // צפצוף כפול מהיר וייחודי לחצי הדרך
         function beepHalfway() {
             playBeep(1100, 0.1);
             setTimeout(() => playBeep(1100, 0.1), 180);
         }
 
+        // לולאת שמירה מפני שינה - משאירה את הדפדפן וכרטיס הקול עירניים לגמרי מהשנייה הראשונה
         function startKeepAliveLoop() {
             setInterval(() => {
                 if (audioCtx && audioCtx.state === 'running') {
+                    // צפצוף בתדר נמוך מאוד שלא נשמע לאוזן אנושית, אך שומר על הערוץ דרוך
                     playBeep(20, 0.02, 0.01); 
                 }
             }, 10000);
@@ -134,17 +144,23 @@
         function activateAudioSystem() {
             isAudioUnlocked = true;
             document.getElementById('audio-auth-overlay').style.display = 'none';
+            
+            // אישור קולי מיידי שהמערכת נפתחה ומוכנה לעבודה
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
+                
+                // צפצוף פתיחה חזק וברור
                 playBeep(880, 0.25);
+                
+                // הפעלת לולאת שמירת ערוץ השמע פתוח
                 startKeepAliveLoop();
             } catch(e) { console.log(e); }
 
             loadData();
-            setInterval(loadData, 2000); 
+            setInterval(loadData, 2500);
         }
 
         function parseCSV(text) {
@@ -172,7 +188,7 @@
         async function loadData() {
             if (!isAudioUnlocked) return;
             try {
-                const timestamp = '&cachebust=' + Date.now();
+                const timestamp = '&t=' + Date.now();
                 
                 const resTimer = await fetch(TIMER_URL + timestamp);
                 const textTimer = await resTimer.text();
@@ -187,40 +203,29 @@
                     const rowsMain = parseCSV(textMain);
                     parse(rowsMain);
                 }
+
             } catch (e) { console.error(e); }
         }
 
         function parseTimerSettings(rows) {
-            if (!rows || rows.length < 3) return;
-
-            // משיכה ישירה לפי שורות חסינת ג'יבריש
-            if (rows[0] && rows[0][1]) {
-                let val = parseFloat(rows[0][1].trim());
-                if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
-            }
-            
-            if (rows[1] && rows[1][1]) {
-                let val = parseFloat(rows[1][1].trim());
-                if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
-            }
-            
             let sheetStatus = "STOP";
-            if (rows[2] && rows[2][1]) {
-                sheetStatus = rows[2][1].trim().toUpperCase();
-            }
-            
-            let roundFromSheet = currentRound;
-            if (rows[3] && rows[3][1]) {
-                let val = parseInt(rows[3][1].trim());
-                if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
-                    roundFromSheet = val;
-                }
-            }
 
-            if (roundFromSheet !== lastSheetRound) {
-                currentRound = roundFromSheet;
-                lastSheetRound = roundFromSheet;
-                updateTimerDisplay();
+            for (let i = 0; i < rows.length; i++) {
+                if (!rows[i] || rows[i].length < 2) continue;
+                let label = rows[i][0] ? rows[i][0].trim() : "";
+                let value = rows[i][1] ? rows[i][1].trim() : "";
+                
+                if (label === "זמן טיימר בדקות") {
+                    let val = parseFloat(value);
+                    if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
+                }
+                if (label === "זמן הפסקה בדקות") {
+                    let val = parseFloat(value);
+                    if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
+                }
+                if (label === "מצב נוכחי") {
+                    sheetStatus = value.toUpperCase();
+                }
             }
 
             if (timerStatus === "STOP" && lastSheetStatus !== "STOP" && sheetStatus !== "START" && sheetStatus !== "STOP") {
@@ -236,7 +241,7 @@
                     timerInterval = null;
                     timerStatus = "STOP";
                     currentPhase = "WORK";
-                    currentRound = roundFromSheet; 
+                    currentRound = 1;
                     timerSeconds = targetWorkSeconds;
                     initialDuration = targetWorkSeconds;
                     lastSpokenSecond = -1;
@@ -267,4 +272,180 @@
             updateTimerDisplay();
             
             timerInterval = setInterval(() => {
-                if (timerSeconds <= 0)
+                if (timerSeconds <= 0) {
+                    if (currentPhase === "WORK" && targetBreakSeconds > 0) {
+                        currentPhase = "BREAK";
+                        timerSeconds = targetBreakSeconds;
+                        initialDuration = targetBreakSeconds;
+                        lastSpokenSecond = -1;
+                        isHalfwaySignaled = false;
+                        beepAlert(); // צפצוף מעבר ארוך למנוחה
+                        updateTimerDisplay();
+                    } else {
+                        if (currentRound < TOTAL_ROUNDS) {
+                            currentRound++;
+                            currentPhase = "WORK";
+                            timerSeconds = targetWorkSeconds;
+                            initialDuration = targetWorkSeconds;
+                            lastSpokenSecond = -1;
+                            isHalfwaySignaled = false;
+                            beepAlert(); // צפצוף מעבר ארוך לסבב הבא
+                            updateTimerDisplay();
+                        } else {
+                            clearInterval(timerInterval);
+                            timerInterval = null;
+                            timerStatus = "STOP";
+                            currentPhase = "WORK";
+                            currentRound = 1;
+                            isHalfwaySignaled = false;
+                            // 3 צפצופים חגיגיים לסיום האימון המלא
+                            beepAlert();
+                            setTimeout(beepAlert, 600);
+                            setTimeout(beepAlert, 1200);
+                            updateTimerDisplay();
+                        }
+                    }
+                    return;
+                }
+
+                timerSeconds--;
+                updateTimerDisplay();
+
+                // חישוב חצי הדרך המדויק וביצוע צפצוף רק בשלב העבודה (WORK)
+                if (currentPhase === "WORK" && timerStatus === "START") {
+                    let halfTime = Math.floor(initialDuration / 2);
+                    if (timerSeconds === halfTime && !isHalfwaySignaled) {
+                        beepHalfway(); // הפעלת הצפצוף הכפול הייחודי לחצי הדרך
+                        isHalfwaySignaled = true; // חסימת כפל צפצופים באותה השנייה
+                    }
+                }
+
+                // צפצופי ספירה לאחור ב-5 השניות האחרונות של העבודה או המנוחה
+                if (timerSeconds <= 5 && timerSeconds > 0 && lastSpokenSecond !== timerSeconds) {
+                    beepCountdown();
+                    lastSpokenSecond = timerSeconds;
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const timerEl = document.getElementById('workout-timer');
+            const roundEl = document.getElementById('round-counter');
+            
+            let mins = Math.floor(timerSeconds / 60);
+            let secs = timerSeconds % 60;
+            
+            let prefix = currentPhase === "BREAK" ? "מנוחה: " : "";
+            timerEl.innerText = `${prefix}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            roundEl.innerText = `סבב ${currentRound} מתוך ${TOTAL_ROUNDS}`;
+
+            if (timerStatus === "START") {
+                if (currentPhase === "BREAK") {
+                    timerEl.className = "break";
+                } else {
+                    timerEl.className = "running";
+                    let halfTime = Math.floor(initialDuration / 2);
+                    if (timerSeconds <= halfTime) {
+                        timerEl.classList.add("halfway");
+                    }
+                }
+            } else {
+                timerEl.className = "";
+            }
+        }
+
+        function parse(rows) {
+            const now = new Date();
+            const nowMin = (now.getHours() * 60) + now.getMinutes();
+            let sessions = [], current = null;
+
+            rows.forEach(row => {
+                if (!row || row.length === 0) return;
+                let firstCell = row[0] ? row[0].trim() : "";
+                
+                if (firstCell.includes("אימון")) {
+                    const m = firstCell.match(/(\d{1,2}):(\d{2})/);
+                    if (m) {
+                        if (current) sessions.push(current);
+                        current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
+                    }
+                } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
+                    if (!["זמן טיימר בדקות", "זמן הפסקה בדקות", "מצב נוכחי"].includes(firstCell)) {
+                        current.trainees.push(row);
+                    }
+                }
+            });
+            if (current) sessions.push(current);
+
+            let active = null;
+            for (let i = 0; i < sessions.length; i++) {
+                let s = sessions[i];
+                let nextS = sessions[i+1];
+                if (nowMin >= s.start && (!nextS || nowMin < nextS.start)) {
+                    if (nowMin < s.start + 65) active = s;
+                }
+            }
+
+            render(active);
+        }
+
+        function render(active) {
+            const container = document.getElementById('container');
+            if (!active) {
+                container.innerHTML = '<div style="text-align:center;margin-top:20%;font-size:24px;color:#555;">אין אימון פעיל כרגע</div>';
+                return;
+            }
+            container.innerHTML = '';
+            
+            const trainees = active.trainees.filter(t => t[0]);
+            const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
+            let rowDiv = document.createElement('div');
+            rowDiv.className = 'row';
+
+            trainees.forEach((t, i) => {
+                if (i > 0 && i % max === 0) {
+                    container.appendChild(rowDiv);
+                    rowDiv = document.createElement('div');
+                    rowDiv.className = 'row';
+                }
+                
+                let exs = "";
+                for (let m = 1; m < t.length; m++) {
+                    let val = t[m] ? t[m].trim() : "";
+                    if (val === "" || val === "..." || val === "null") continue;
+
+                    if (val.length > 4 || (!val.includes('.') && !val.includes(',') && !val.toLowerCase().includes('k'))) {
+                        let name = val;
+                        let weight = "";
+                        let reps = "";
+
+                        for(let k=1; k<=2; k++) {
+                            let next = t[m+k] ? t[m+k].trim().toLowerCase() : "";
+                            if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) {
+                                weight = t[m+k].trim();
+                            } else if (next.includes('.') || next.includes(',') || (next.match(/^\d+$/) && next.length > 0)) {
+                                reps = t[m+k].trim();
+                            }
+                        }
+
+                        reps = reps.replace(/,/g, 'x').replace(/\./g, 'x');
+                        exs += `<div class="ex-row"><div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div><div class="reps">${reps || '--'}</div></div>`;
+                        m += 2;
+                    }
+                }
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`;
+                rowDiv.appendChild(card);
+            });
+            container.appendChild(rowDiv);
+        }
+
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
+        }, 1000);
+    </script>
+</body>
+</html>
