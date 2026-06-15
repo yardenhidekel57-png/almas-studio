@@ -144,7 +144,7 @@
             } catch(e) { console.log(e); }
 
             loadData();
-            setInterval(loadData, 2000); // סנכרון מהיר כל 2 שניות
+            setInterval(loadData, 2000); 
         }
 
         function parseCSV(text) {
@@ -172,7 +172,8 @@
         async function loadData() {
             if (!isAudioUnlocked) return;
             try {
-                const timestamp = '&t=' + Date.now();
+                // הוספת מזהה ייחודי קשוח כדי לעקוף Cache של דפדפנים ושל שרתי גוגל
+                const timestamp = '&cachebust=' + Date.now();
                 
                 const resTimer = await fetch(TIMER_URL + timestamp);
                 const textTimer = await resTimer.text();
@@ -195,33 +196,35 @@
             let roundFromSheet = currentRound;
 
             for (let i = 0; i < rows.length; i++) {
-                if (!rows[i] || rows[i].length < 2) continue;
+                if (!rows[i] || rows[i].length < 1) continue;
                 
-                let label = rows[i][0] ? rows[i][0].trim() : "";
-                let value = rows[i][1] ? rows[i][1].trim() : "";
+                // איחוד כל השורה לטקסט אחד כדי לבדוק התאמה חופשית וחסינת רווחים
+                let rowStr = rows[i].join(" ").toLowerCase();
                 
-                if (!label) continue;
-
-                if (label.includes("זמן טיימר")) {
-                    let val = parseFloat(value);
+                if (rowStr.includes("זמן טיימר")) {
+                    let val = parseFloat(rows[i][1]);
                     if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
                 }
-                else if (label.includes("זמן הפסקה")) {
-                    let val = parseFloat(value);
+                else if (rowStr.includes("זמן הפסקה")) {
+                    let val = parseFloat(rows[i][1]);
                     if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
                 }
-                else if (label.includes("מצב נוכחי")) {
-                    sheetStatus = value.toUpperCase();
+                else if (rowStr.includes("מצב נוכחי")) {
+                    if (rows[i][1]) sheetStatus = rows[i][1].trim().toUpperCase();
                 }
-                else if (label.includes("סבב נוכחי")) {
-                    let val = parseInt(value);
-                    if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
-                        roundFromSheet = val;
+                else if (rowStr.includes("סבב נוכחי")) {
+                    // חיפוש המספר הראשון בשורה בצורה חכמה
+                    for(let cell of rows[i]) {
+                        let val = parseInt(cell.trim());
+                        if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
+                            roundFromSheet = val;
+                            break;
+                        }
                     }
                 }
             }
 
-            // עדכון סבב מיידי - עובד גם בסטופ וגם בסטארט!
+            // עדכון סבב מיידי על המסך
             if (roundFromSheet !== lastSheetRound) {
                 currentRound = roundFromSheet;
                 lastSheetRound = roundFromSheet;
@@ -370,8 +373,8 @@
                         current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
                     }
                 } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
-                    // התעלמות משורות הגדרת הטיימר הדינמיות
-                    if (!firstCell.includes("זמן טיימר") && !firstCell.includes("זמן הפסקה") && !firstCell.includes("מצב נוכחי") && !firstCell.includes("סבב נוכחי")) {
+                    let rStr = row.join(" ").toLowerCase();
+                    if (!rStr.includes("זמן טיימר") && !rStr.includes("זמן הפסקה") && !rStr.includes("מצב נוכחי") && !rStr.includes("סבב נוכחי")) {
                         current.trainees.push(row);
                     }
                 }
