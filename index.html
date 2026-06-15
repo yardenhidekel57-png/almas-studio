@@ -63,9 +63,13 @@
     <div class="footer-credit">Developed by Gal E</div>
 
     <script>
-        const SHEET_ID = '18DFppHukNFORCDMr4CAyZ-LlEOgBKVDbliLN4-vpFCk';
-        const MAIN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-        const TIMER_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=688968739`;
+        // הקישור הראשי של הפרסום (מבוסס על מה שהעתקת מחלון גוגל שיטס)
+        const PUBLISHED_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-WQXftwgwJTmpTLF3wzG8vgQDKZsJJ4yM-vV5nGnC_8tFSnjoSSTcNEkTEQ45Oc-UalK6lanGaOf_/pubhtml';
+
+        // בניית הקישורים האוטומטית עם ה-GID הנכון והמעודכן ששלחת
+        const BASE_CSV_URL = PUBLISHED_URL.replace('/pubhtml', '/pub?output=csv');
+        const MAIN_URL = `${BASE_CSV_URL}&gid=0`;
+        const TIMER_URL = `${BASE_CSV_URL}&gid=631039771`; // עודכן ל-GID הנכון של הטיימר!
 
         let timerSeconds = 0;
         let initialDuration = 0;
@@ -172,7 +176,6 @@
         async function loadData() {
             if (!isAudioUnlocked) return;
             try {
-                // הוספת מזהה ייחודי קשוח כדי לעקוף Cache של דפדפנים ושל שרתי גוגל
                 const timestamp = '&cachebust=' + Date.now();
                 
                 const resTimer = await fetch(TIMER_URL + timestamp);
@@ -192,39 +195,32 @@
         }
 
         function parseTimerSettings(rows) {
-            let sheetStatus = "STOP";
-            let roundFromSheet = currentRound;
+            if (!rows || rows.length < 3) return;
 
-            for (let i = 0; i < rows.length; i++) {
-                if (!rows[i] || rows[i].length < 1) continue;
-                
-                // איחוד כל השורה לטקסט אחד כדי לבדוק התאמה חופשית וחסינת רווחים
-                let rowStr = rows[i].join(" ").toLowerCase();
-                
-                if (rowStr.includes("זמן טיימר")) {
-                    let val = parseFloat(rows[i][1]);
-                    if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
-                }
-                else if (rowStr.includes("זמן הפסקה")) {
-                    let val = parseFloat(rows[i][1]);
-                    if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
-                }
-                else if (rowStr.includes("מצב נוכחי")) {
-                    if (rows[i][1]) sheetStatus = rows[i][1].trim().toUpperCase();
-                }
-                else if (rowStr.includes("סבב נוכחי")) {
-                    // חיפוש המספר הראשון בשורה בצורה חכמה
-                    for(let cell of rows[i]) {
-                        let val = parseInt(cell.trim());
-                        if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
-                            roundFromSheet = val;
-                            break;
-                        }
-                    }
+            // משיכה ישירה לפי שורות (עמודה B) - חסין ג'יבריש ובעיות קידוד
+            if (rows[0] && rows[0][1]) {
+                let val = parseFloat(rows[0][1].trim());
+                if (!isNaN(val)) targetWorkSeconds = Math.round(val * 60);
+            }
+            
+            if (rows[1] && rows[1][1]) {
+                let val = parseFloat(rows[1][1].trim());
+                if (!isNaN(val)) targetBreakSeconds = Math.round(val * 60);
+            }
+            
+            let sheetStatus = "STOP";
+            if (rows[2] && rows[2][1]) {
+                sheetStatus = rows[2][1].trim().toUpperCase();
+            }
+            
+            let roundFromSheet = currentRound;
+            if (rows[3] && rows[3][1]) {
+                let val = parseInt(rows[3][1].trim());
+                if (!isNaN(val) && val >= 1 && val <= TOTAL_ROUNDS) {
+                    roundFromSheet = val;
                 }
             }
 
-            // עדכון סבב מיידי על המסך
             if (roundFromSheet !== lastSheetRound) {
                 currentRound = roundFromSheet;
                 lastSheetRound = roundFromSheet;
@@ -364,8 +360,8 @@
 
             rows.forEach(row => {
                 if (!row || row.length === 0) return;
-                let firstCell = row[0] ? row[0].trim() : "";
                 
+                let firstCell = row[0] ? row[0].trim() : "";
                 if (firstCell.includes("אימון")) {
                     const m = firstCell.match(/(\d{1,2}):(\d{2})/);
                     if (m) {
@@ -373,8 +369,7 @@
                         current = { start: (parseInt(m[1])*60)+parseInt(m[2]), title: firstCell, trainees: [] };
                     }
                 } else if (current && firstCell !== "מתאמנת" && firstCell !== "") {
-                    let rStr = row.join(" ").toLowerCase();
-                    if (!rStr.includes("זמן טיימר") && !rStr.includes("זמן הפסקה") && !rStr.includes("מצב נוכחי") && !rStr.includes("סבב נוכחי")) {
+                    if (rows.indexOf(row) > 4) {
                         current.trainees.push(row);
                     }
                 }
@@ -401,53 +396,4 @@
             container.innerHTML = '';
             
             const trainees = active.trainees.filter(t => t[0]);
-            const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.length / 2);
-            let rowDiv = document.createElement('div');
-            rowDiv.className = 'row';
-
-            trainees.forEach((t, i) => {
-                if (i > 0 && i % max === 0) {
-                    container.appendChild(rowDiv);
-                    rowDiv = document.createElement('div');
-                    rowDiv.className = 'row';
-                }
-                
-                let exs = "";
-                for (let m = 1; m < t.length; m++) {
-                    let val = t[m] ? t[m].trim() : "";
-                    if (val === "" || val === "..." || val === "null") continue;
-
-                    if (val.length > 4 || (!val.includes('.') && !val.includes(',') && !val.toLowerCase().includes('k'))) {
-                        let name = val;
-                        let weight = "";
-                        let reps = "";
-
-                        for(let k=1; k<=2; k++) {
-                            let next = t[m+k] ? t[m+k].trim().toLowerCase() : "";
-                            if (next.includes('k') || (next.match(/^\d+$/) && next.length <= 3)) {
-                                weight = t[m+k].trim();
-                            } else if (next.includes('.') || next.includes(',') || (next.match(/^\d+$/) && next.length > 0)) {
-                                reps = t[m+k].trim();
-                            }
-                        }
-
-                        reps = reps.replace(/,/g, 'x').replace(/\./g, 'x');
-                        exs += `<div class="ex-row"><div class="ex-text"><span>${name}</span>${weight ? `<span class="weight">${weight}</span>` : ''}</div><div class="reps">${reps || '--'}</div></div>`;
-                        m += 2;
-                    }
-                }
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `<div class="name">${t[0]}</div><div class="ex-list">${exs}</div>`;
-                rowDiv.appendChild(card);
-            });
-            container.appendChild(rowDiv);
-        }
-
-        setInterval(() => {
-            const d = new Date();
-            document.getElementById('time').innerText = d.toTimeString().split(' ')[0];
-        }, 1000);
-    </script>
-</body>
-</html>
+            const max = trainees.length <= 3 ? trainees.length : Math.ceil(trainees.
